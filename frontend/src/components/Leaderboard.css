@@ -1,0 +1,157 @@
+.ldb-content-area {
+  padding: 3rem 4rem;
+  overflow-y: auto;
+  align-items: center; /* Center the table if window is very large */
+}
+
+.ldb-hero {
+  width: 100%;
+  max-width: 900px;
+  margin-bottom: 2rem;
+}
+
+.ldb-table-container {
+  width: 100%;
+  max-width: 900px;
+  background: rgba(15, 15, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.ldb-header-row {
+  display: flex;
+  align-items: center;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #a0a0a0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.ldb-col-rank {
+  width: 80px;
+  text-align: center;
+}
+
+.ldb-col-project {
+  flex: 1;
+}
+
+.ldb-col-likes {
+  width: 100px;
+  text-align: right;
+}
+
+.ldb-row {
+  display: flex;
+  align-items: center;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background 0.2s;
+}
+
+.ldb-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.ldb-row:last-child {
+  border-bottom: none;
+}
+
+.rank-badge {
+  width: 32px;
+  height: 40px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: #fff;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Fallback badge styling if SVG is not present */
+.rank-badge.gold {
+  background: linear-gradient(135deg, #fcd34d, #d97706);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 1.5rem;
+}
+
+.rank-badge.silver {
+  background: linear-gradient(135deg, #e5e7eb, #9ca3af);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 1.5rem;
+}
+
+.rank-badge.bronze {
+  background: linear-gradient(135deg, #fca5a5, #b91c1c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 1.5rem;
+}
+
+.rank-num-plain {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.ldb-project-img {
+  width: 120px;
+  height: 68px;
+  border-radius: 8px;
+  object-fit: cover;
+  margin-right: 1.5rem;
+  flex-shrink: 0;
+}
+
+.ldb-col-project {
+  display: flex;
+  align-items: center;
+}
+
+.ldb-project-info h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.2rem;
+}
+
+.verified-icon-ldb {
+  width: 16px;
+  height: 16px;
+  color: #3b82f6;
+}
+
+.ldb-project-info p {
+  font-size: 0.85rem;
+  color: #a0a0a0;
+  margin-bottom: 0.1rem;
+}
+
+.ldb-author {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.ldb-col-likes {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: #a0a0a0;
+}
+
+.like-icon {
+  color: #8b5cf6;
+}
