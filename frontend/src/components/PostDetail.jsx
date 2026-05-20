@@ -2,15 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from './dashboard/Sidebar';
 import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
 import './PostDetail.css';
 import { Heart, MessageSquare, Share2, Bookmark, CheckCircle2, Award, ChevronLeft } from 'lucide-react';
 
 const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { currentUser, isAuthenticated } = useAuth();
   const [post, setPost] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [commentInput, setCommentInput] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [bookmarked, setBookmarked] = useState(false);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -18,6 +26,7 @@ const PostDetail = () => {
         setIsLoading(true);
         const data = await api.getPostDetail(id);
         setPost(data);
+        setLikesCount(data.stats.likes);
       } catch (err) {
         console.error(err);
       } finally {
@@ -26,6 +35,106 @@ const PostDetail = () => {
     };
     fetchPost();
   }, [id]);
+
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (!commentInput.trim()) return;
+
+    try {
+      setIsSubmitting(true);
+      const newComment = await api.addComment(id, {
+        content: commentInput,
+        parentCommentId: replyingTo
+      });
+      
+      // Add comment to local state
+      if (replyingTo) {
+        // Add as reply
+        setPost(prev => ({
+          ...prev,
+          comments: prev.comments.map(c => 
+            c.id === replyingTo 
+              ? { ...c, replies: [...(c.replies || []), newComment] }
+              : c
+          )
+        }));
+      } else {
+        // Add as top-level comment
+        setPost(prev => ({
+          ...prev,
+          comments: [newComment, ...prev.comments],
+          stats: { ...prev.stats, comments: prev.stats.comments + 1 }
+        }));
+      }
+      
+      setCommentInput('');
+      setReplyingTo(null);
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+      if (error.response?.status === 401) {
+        navigate('/login');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLike = async () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const result = await api.likePost(id);
+      setLiked(result.liked);
+      setLikesCount(result.likesCount);
+    } catch (error) {
+      console.error('Failed to like post:', error);
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const result = await api.bookmarkPost(id);
+      setBookmarked(result.bookmarked);
+    } catch (error) {
+      console.error('Failed to bookmark post:', error);
+    }
+  };
+
+  const handleMarkWinner = async (commentId) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await api.markCommentAsWinner(id, commentId);
+      
+      // Update comment in local state
+      setPost(prev => ({
+        ...prev,
+        comments: prev.comments.map(c => 
+          c.id === commentId ? { ...c, isWinner: true } : c
+        )
+      }));
+    } catch (error) {
+      console.error('Failed to mark winner:', error);
+      alert(error.response?.data?.message || 'Failed to mark winner');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -81,10 +190,22 @@ const PostDetail = () => {
               )}
 
               <div className="pd-actions">
-                <button className="pd-action-btn"><Heart size={18} /> {post.stats.likes}</button>
+                <button 
+                  className={`pd-action-btn ${liked ? 'liked' : ''}`}
+                  onClick={handleLike}
+                  style={{ color: liked ? '#ef4444' : 'inherit' }}
+                >
+                  <Heart size={18} fill={liked ? 'currentColor' : 'none'} /> {likesCount}
+                </button>
                 <button className="pd-action-btn"><MessageSquare size={18} /> {post.stats.comments}</button>
                 <button className="pd-action-btn"><Share2 size={18} /> Share</button>
-                <button className="pd-action-btn ml-auto"><Bookmark size={18} /></button>
+                <button 
+                  className={`pd-action-btn ml-auto ${bookmarked ? 'bookmarked' : ''}`}
+                  onClick={handleBookmark}
+                  style={{ color: bookmarked ? '#3b82f6' : 'inherit' }}
+                >
+                  <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
+                </button>
               </div>
             </div>
 
@@ -93,14 +214,21 @@ const PostDetail = () => {
               <h3>Comments ({post.stats.comments})</h3>
               
               <div className="pd-comment-input-box">
-                <img src="https://i.pravatar.cc/150?img=11" alt="Me" className="pd-avatar" />
+                <img src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} alt="Me" className="pd-avatar" />
                 <input 
                   type="text" 
                   placeholder="Add a comment or suggest a solution..." 
                   value={commentInput}
                   onChange={(e) => setCommentInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddComment(e)}
                 />
-                <button className="btn-post">Reply</button>
+                <button 
+                  className="btn-post" 
+                  onClick={handleAddComment}
+                  disabled={isSubmitting || !commentInput.trim()}
+                >
+                  {isSubmitting ? 'Posting...' : 'Reply'}
+                </button>
               </div>
 
               <div className="pd-comments-list">
@@ -122,8 +250,14 @@ const PostDetail = () => {
                           <span className="pd-c-time">• {comment.timeAgo}</span>
                           
                           {/* Only show this if the logged in user is the post creator and it's a bounty */}
-                          {!comment.isWinner && post.badge === 'Bounty' && (
-                            <button className="pd-nominate-btn ml-auto">Nominate as Winner</button>
+                          {!comment.isWinner && post.badge === 'Bounty' && currentUser && 
+                           currentUser.username === post.author.handle.replace('@', '') && (
+                            <button 
+                              className="pd-nominate-btn ml-auto"
+                              onClick={() => handleMarkWinner(comment.id)}
+                            >
+                              Mark as Winner
+                            </button>
                           )}
                         </div>
                         <p className="pd-c-text">{comment.content}</p>

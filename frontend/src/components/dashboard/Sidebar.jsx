@@ -1,11 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { 
   Home as HomeIcon, Briefcase, Bug, Trophy, 
   MessageSquare, Bookmark, User, Code2, Users, Bell, Hash
 } from 'lucide-react';
 
 const Sidebar = ({ activeTab = 'home' }) => {
+  const { currentUser } = useAuth();
+
   return (
     <aside className="dash-sidebar">
       <div className="dash-sidebar-logo">
@@ -34,11 +37,15 @@ const Sidebar = ({ activeTab = 'home' }) => {
 
         <Link to="/messages" className={`nav-item has-badge ${activeTab === 'messages' ? 'active' : ''}`}>
           <div className="nav-item-left"><MessageSquare size={18} /> Messages</div>
-          <span className="nav-badge">3</span>
+          {currentUser?.unreadMessages > 0 && (
+            <span className="nav-badge">{currentUser.unreadMessages}</span>
+          )}
         </Link>
         <a href="#" className="nav-item has-badge">
           <div className="nav-item-left"><Bell size={18} /> Notifications</div>
-          <span className="nav-badge">8</span>
+          {currentUser?.unreadNotifications > 0 && (
+            <span className="nav-badge">{currentUser.unreadNotifications}</span>
+          )}
         </a>
 
         <a href="#" className="nav-item">
@@ -53,10 +60,15 @@ const Sidebar = ({ activeTab = 'home' }) => {
         </div>
 
         <Link to="/profile" className="user-profile-pill" style={{ textDecoration: 'none', color: 'inherit', display: 'flex' }}>
-          <img src="https://i.pravatar.cc/150?img=11" alt="User" />
+          <img 
+            src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
+            alt="User" 
+          />
           <div className="user-info">
-            <span className="user-name">Arjun Dev</span>
-            <span className="user-handle"><div className="status-dot"></div> Git Commit Monster</span>
+            <span className="user-name">{currentUser?.fullName || 'Guest User'}</span>
+            <span className="user-handle">
+              <div className="status-dot"></div> {currentUser?.badge || 'Developer'}
+            </span>
           </div>
           <div className="more-dots">...</div>
         </Link>

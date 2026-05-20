@@ -1,12 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './dashboard/Sidebar';
 import './Leaderboard.css';
-import { leaderboardData } from '../data/mockData';
+import { api } from '../api';
 import { Heart } from 'lucide-react';
 
 
 const Leaderboard = () => {
   const [activeTab, setActiveTab] = useState('This Week');
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        setIsLoading(true);
+        const data = await api.getLeaderboard();
+        setLeaderboard(data);
+      } catch (error) {
+        console.error('Failed to load leaderboard:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchLeaderboard();
+  }, []);
 
   return (
     <div className="dashboard-container">
@@ -40,8 +57,10 @@ const Leaderboard = () => {
           <div className="ldb-list">
             {isLoading ? (
               <div style={{ textAlign: 'center', padding: '3rem', color: '#666' }}>Loading leaderboard...</div>
+            ) : leaderboard.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem', color: '#666' }}>No projects found</div>
             ) : (
-              leaderboardData.map(item => (
+              leaderboard.map(item => (
                 <div key={item.id} className="ldb-row">
                   <div className="ldb-col-rank">
                     {item.badge ? (

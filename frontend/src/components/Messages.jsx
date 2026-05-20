@@ -1,14 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import Sidebar from './dashboard/Sidebar';
 import './Messages.css';
-import { mockChats } from '../data/mockData';
+import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
 import { Search, Edit, MoreHorizontal, Paperclip, Send } from 'lucide-react';
 
 const Messages = () => {
-  const [activeChatId, setActiveChatId] = useState(1);
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const [activeChatId, setActiveChatId] = useState(null);
   const [messageInput, setMessageInput] = useState('');
+  const [chats, setChats] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
 
-  const activeChat = mockChats.find(c => c.id === activeChatId);
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    const fetchChats = async () => {
+      try {
+        setIsLoading(true);
+        const data = await api.getMessages();
+        setChats(data);
+        if (data.length > 0) {
+          setActiveChatId(data[0].id);
+        }
+      } catch (error) {
+        console.error('Failed to load messages:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchChats();
+  }, [isAuthenticated, navigate]);
+
+  const activeChat = chats.find(c => c.id === activeChatId);
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    
+    if (!messageInput.trim() || !activeChatId || isSending) return;
+
+    try {
+      setIsSending(true);
+      const newMessage = await api.sendMessage(activeChatId, messageInput);
+      
+      // Add message to local state
+      setChats(prevChats => 
+        prevChats.map(chat => 
+          chat.id === activeChatId 
+            ? { 
+                ...chat, 
+                messages: [...chat.messages, newMessage],
+                lastMessage: messageInput.substring(0, 50) + (messageInput.length > 50 ? '...' : '')
+              }
+            : chat
+        )
+      );
+      
+      setMessageInput('');
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <div className="dashboard-container">
@@ -41,21 +101,41 @@ const Messages = () => {
             </div>
 
             <div className="msg-chat-list">
-              {mockChats.map(chat => (
+              {isLoading ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                  Loading chats...
+                </div>
+              ) : chats.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                  No messages yet
+                </div>
+              ) : (
+                chats.map(chat => (
                 <div 
                   key={chat.id} 
                   className={`msg-chat-item ${activeChatId === chat.id ? 'active' : ''}`}
                   onClick={() => setActiveChatId(chat.id)}
                 >
-                  <div className="msg-avatar-wrapper">
+                  <Link 
+                    to={`/profile/${chat.user.username}`}
+                    className="msg-avatar-wrapper"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ textDecoration: 'none' }}
+                  >
                     <img src={chat.user.avatar} alt={chat.user.name} />
-                  </div>
+                  </Link>
                   <div className="msg-chat-info">
                     <div className="msg-chat-header">
-                      <h4>
-                        {chat.user.name}
-                        {chat.user.online && <span className="online-dot-sm"></span>}
-                      </h4>
+                      <Link 
+                        to={`/profile/${chat.user.username}`}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ textDecoration: 'none', color: 'inherit' }}
+                      >
+                        <h4>
+                          {chat.user.name}
+                          {chat.user.online && <span className="online-dot-sm"></span>}
+                        </h4>
+                      </Link>
                       <span className="msg-time">{chat.time}</span>
                     </div>
                     <div className="msg-chat-snippet-row">
@@ -66,7 +146,8 @@ const Messages = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </div>
           </div>
 
@@ -76,16 +157,21 @@ const Messages = () => {
               <>
                 <div className="msg-main-header">
                   <div className="msg-header-user">
-                    <img src={activeChat.user.avatar} alt={activeChat.user.name} />
-                    <div>
-                      <h3>
-                        {activeChat.user.name}
-                        {activeChat.user.online && <span className="online-dot-sm"></span>}
-                      </h3>
-                      <span className="msg-status-text">
-                        {activeChat.user.online ? 'Online' : 'Offline'}
-                      </span>
-                    </div>
+                    <Link 
+                      to={`/profile/${activeChat.user.username}`}
+                      style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }}
+                    >
+                      <img src={activeChat.user.avatar} alt={activeChat.user.name} />
+                      <div>
+                        <h3 style={{ color: 'inherit' }}>
+                          {activeChat.user.name}
+                          {activeChat.user.online && <span className="online-dot-sm"></span>}
+                        </h3>
+                        <span className="msg-status-text">
+                          {activeChat.user.online ? 'Online' : 'Offline'}
+                        </span>
+                      </div>
+                    </Link>
                   </div>
                 </div>
 
@@ -94,7 +180,14 @@ const Messages = () => {
                   
                   {activeChat.messages && activeChat.messages.map(msg => (
                     <div key={msg.id} className={`msg-bubble-wrapper ${msg.isMe ? 'me' : 'them'}`}>
-                      {!msg.isMe && <img src={activeChat.user.avatar} alt="Avatar" className="msg-bubble-avatar" />}
+                      {!msg.isMe && (
+                        <Link 
+                          to={`/profile/${activeChat.user.username}`}
+                          style={{ textDecoration: 'none' }}
+                        >
+                          <img src={activeChat.user.avatar} alt="Avatar" className="msg-bubble-avatar" />
+                        </Link>
+                      )}
                       <div className={`msg-bubble ${msg.isMe ? 'me' : 'them'}`}>
                         <p>{msg.text}</p>
                         <span className="msg-bubble-time">
@@ -112,8 +205,13 @@ const Messages = () => {
                     placeholder="Type a message..." 
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(e)}
                   />
-                  <button className="msg-send-btn">
+                  <button 
+                    className="msg-send-btn"
+                    onClick={handleSendMessage}
+                    disabled={isSending || !messageInput.trim()}
+                  >
                     <Send size={18} />
                   </button>
                 </div>

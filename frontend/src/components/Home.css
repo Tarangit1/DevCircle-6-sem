@@ -413,6 +413,16 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.btn-post:hover:not(:disabled) {
+  background-color: #2b4cff;
+}
+
+.btn-post:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .feed-filters-container {
@@ -525,6 +535,43 @@
   padding: 0.2rem 0.6rem;
   border-radius: 4px;
   font-weight: 500;
+  white-space: nowrap;
+}
+
+.connect-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #3b5cff;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.connect-btn:hover:not(:disabled) {
+  background-color: #2b4cff;
+  transform: translateY(-1px);
+}
+
+.connect-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.connect-btn.connected {
+  background-color: rgba(59, 92, 255, 0.15);
+  color: #7a8cff;
+  border: 1px solid rgba(59, 92, 255, 0.3);
+}
+
+.connect-btn.connected:hover:not(:disabled) {
+  background-color: rgba(59, 92, 255, 0.25);
 }
 
 .badge-building { background-color: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }

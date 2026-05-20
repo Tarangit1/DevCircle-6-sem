@@ -111,22 +111,28 @@
 
 .input-wrapper {
   position: relative;
-  display: flex;
-  align-items: center;
+  display: block;
+  width: 100%;
 }
 
 .input-icon {
   position: absolute;
-  left: 1rem;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
   color: #666;
   pointer-events: none;
+  z-index: 2;
 }
 
 .input-icon-right {
   position: absolute;
-  right: 1rem;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
   color: #666;
   cursor: pointer;
+  z-index: 2;
 }
 
 .input-icon-right:hover {
@@ -148,11 +154,11 @@
 }
 
 .input-wrapper input {
-  padding: 0.9rem 2.5rem;
+  padding: 0.9rem 3rem 0.9rem 1rem;
 }
 
 .input-wrapper select {
-  padding: 0.9rem 2.5rem;
+  padding: 0.9rem 3rem 0.9rem 1rem;
   appearance: none;
 }
 

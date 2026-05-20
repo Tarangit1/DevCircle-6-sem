@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './Auth.css';
 import { 
   Code2, User, Mail, Lock, Eye, AtSign, 
@@ -8,6 +9,9 @@ import {
 
 const Auth = ({ defaultMode = 'login' }) => {
   const navigate = useNavigate();
+  const { login, register } = useAuth();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   
   // Login State
   const [loginForm, setLoginForm] = useState({
@@ -31,16 +35,71 @@ const Auth = ({ defaultMode = 'login' }) => {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login attempt:', loginForm);
-    // TODO: Send to backend API
+    setError('');
+    setLoading(true);
+
+    try {
+      const result = await login({
+        email: loginForm.identifier,
+        password: loginForm.password
+      });
+
+      if (result.success) {
+        navigate('/home');
+      } else {
+        setError(result.message);
+      }
+    } catch (err) {
+      setError('An error occurred during login');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignupSubmit = (e) => {
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
-    console.log('Signup attempt:', signupForm);
-    // TODO: Send to backend API
+    setError('');
+
+    // Validation
+    if (!signupForm.fullName || !signupForm.username || !signupForm.email || !signupForm.password) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    if (signupForm.password !== signupForm.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (signupForm.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const result = await register({
+        fullName: signupForm.fullName,
+        username: signupForm.username,
+        email: signupForm.email,
+        password: signupForm.password,
+        bio: signupForm.bio,
+        badge: signupForm.badge
+      });
+
+      if (result.success) {
+        navigate('/home');
+      } else {
+        setError(result.message);
+      }
+    } catch (err) {
+      setError('An error occurred during registration');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,15 +125,29 @@ const Auth = ({ defaultMode = 'login' }) => {
           </div>
 
           <form className="auth-form" onSubmit={handleLoginSubmit}>
+            {error && (
+              <div style={{ 
+                padding: '12px', 
+                background: 'rgba(239, 68, 68, 0.1)', 
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '8px',
+                color: '#ef4444',
+                fontSize: '14px',
+                marginBottom: '16px'
+              }}>
+                {error}
+              </div>
+            )}
+
             <div className="form-group">
               <label>Email or Username</label>
               <div className="input-wrapper">
-                <User className="input-icon" size={18} />
                 <input 
                   type="text" 
                   placeholder="Enter your email or username" 
                   value={loginForm.identifier}
                   onChange={(e) => setLoginForm({...loginForm, identifier: e.target.value})}
+                  required
                 />
               </div>
             </div>
@@ -82,12 +155,12 @@ const Auth = ({ defaultMode = 'login' }) => {
             <div className="form-group">
               <label>Password</label>
               <div className="input-wrapper">
-                <Lock className="input-icon" size={18} />
                 <input 
                   type={showLoginPassword ? "text" : "password"} 
                   placeholder="Enter your password"
                   value={loginForm.password}
                   onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
+                  required
                 />
                 <Eye 
                   className="input-icon-right" 
@@ -111,17 +184,8 @@ const Auth = ({ defaultMode = 'login' }) => {
               <a href="#" className="forgot-link">Forgot password?</a>
             </div>
 
-            <button type="submit" className="auth-submit-btn">
-              Log in to DevCircle <span className="arrow">→</span>
-            </button>
-
-            <div className="divider">
-              <span>or continue with</span>
-            </div>
-
-            <button type="button" className="google-btn">
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width={18} height={18} />
-              Continue with Google
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? 'Logging in...' : 'Log in to DevCircle'} <span className="arrow">→</span>
             </button>
           </form>
 
@@ -150,23 +214,37 @@ const Auth = ({ defaultMode = 'login' }) => {
           </div>
 
           <form className="auth-form" onSubmit={handleSignupSubmit}>
+            {error && (
+              <div style={{ 
+                padding: '12px', 
+                background: 'rgba(239, 68, 68, 0.1)', 
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '8px',
+                color: '#ef4444',
+                fontSize: '14px',
+                marginBottom: '16px'
+              }}>
+                {error}
+              </div>
+            )}
+
             <div className="form-row-profile">
               <div className="form-group profile-upload-group">
                 <label>Profile Picture</label>
                 <div className="profile-upload-circle">
                   <Upload size={20} />
-                  <span>Upload</span>
+                  <span>Auto Generated</span>
                 </div>
               </div>
               <div className="form-group flex-1">
                 <label>Full Name</label>
                 <div className="input-wrapper">
-                  <User className="input-icon" size={18} />
                   <input 
                     type="text" 
                     placeholder="Enter your full name" 
                     value={signupForm.fullName}
                     onChange={(e) => setSignupForm({...signupForm, fullName: e.target.value})}
+                    required
                   />
                 </div>
               </div>
@@ -176,7 +254,6 @@ const Auth = ({ defaultMode = 'login' }) => {
               <div className="form-group">
                 <label>Username</label>
                 <div className="input-wrapper">
-                  <AtSign className="input-icon" size={18} />
                   <input 
                     type="text" 
                     placeholder="Choose a username"
@@ -188,7 +265,6 @@ const Auth = ({ defaultMode = 'login' }) => {
               <div className="form-group">
                 <label>Email</label>
                 <div className="input-wrapper">
-                  <Mail className="input-icon" size={18} />
                   <input 
                     type="email" 
                     placeholder="Enter your email"
@@ -203,7 +279,6 @@ const Auth = ({ defaultMode = 'login' }) => {
               <div className="form-group">
                 <label>Password</label>
                 <div className="input-wrapper">
-                  <Lock className="input-icon" size={18} />
                   <input 
                     type={showSignupPassword ? "text" : "password"}
                     placeholder="Create a password"
@@ -221,7 +296,6 @@ const Auth = ({ defaultMode = 'login' }) => {
               <div className="form-group">
                 <label>Confirm Password</label>
                 <div className="input-wrapper">
-                  <Lock className="input-icon" size={18} />
                   <input 
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
@@ -254,7 +328,6 @@ const Auth = ({ defaultMode = 'login' }) => {
               <label>Choose Your Developer Badge</label>
               <div className="badge-options">
                 <div className="input-wrapper badge-select">
-                  <Star className="input-icon" size={16} />
                   <select 
                     value={signupForm.badge}
                     onChange={(e) => setSignupForm({...signupForm, badge: e.target.value})}
@@ -275,8 +348,8 @@ const Auth = ({ defaultMode = 'login' }) => {
               </div>
             </div>
 
-            <button type="submit" className="auth-submit-btn">
-              Create Account <span className="arrow">→</span>
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? 'Creating Account...' : 'Create Account'} <span className="arrow">→</span>
             </button>
           </form>
 

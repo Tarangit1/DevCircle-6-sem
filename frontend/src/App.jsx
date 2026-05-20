@@ -12,6 +12,7 @@ import Leaderboard from './components/Leaderboard';
 import Messages from './components/Messages';
 import Profile from './components/Profile';
 import PostDetail from './components/PostDetail';
+import Notifications from './components/Notifications';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ function App() {
           <Route path="/bounties" element={<Bounties />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:username" element={<Profile />} />
           <Route path="/post/:id" element={<PostDetail />} />

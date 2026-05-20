@@ -2,16 +2,66 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, ChevronDown, X, Image as ImageIcon } from 'lucide-react';
 import Sidebar from './dashboard/Sidebar';
+import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
 import './CreateProject.css';
 
 const CreateProject = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
-  const [activeCategory, setActiveCategory] = useState('Web Development');
+  const [activeCategory, setActiveCategory] = useState('Web');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  const categories = ['Web Development', 'Mobile App', 'Developer Tools', 'AI / ML', 'Design Tools', 'Other'];
+  // Map display labels to backend enum values
+  const categories = [
+    { label: 'Web Development', value: 'Web' },
+    { label: 'Mobile App', value: 'Mobile' },
+    { label: 'Backend', value: 'Backend' },
+    { label: 'DevOps', value: 'DevOps' },
+    { label: 'AI / ML', value: 'AI/ML' },
+    { label: 'Other', value: 'Other' }
+  ];
   const [techStack, setTechStack] = useState(['Next.js', 'TypeScript', 'Tailwind CSS', 'Prisma']);
+
+  const handleSubmit = async () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    setError('');
+
+    if (!title.trim()) {
+      setError('Project title is required');
+      return;
+    }
+
+    if (!desc.trim()) {
+      setError('Project description is required');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const newPost = await api.createPost({
+        title: title.trim(),
+        desc: desc.trim(),
+        tags: techStack,
+        badge: 'Building',
+        category: activeCategory
+      });
+      
+      navigate(`/post/${newPost.id}`);
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      setError(error.response?.data?.message || 'Failed to create project');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="dashboard-container">
@@ -26,13 +76,32 @@ const CreateProject = () => {
               <button className="btn-back" onClick={() => navigate('/projects')}>
                 <ArrowLeft size={16} /> Back to Projects
               </button>
-              <button className="btn-post-project">Post</button>
+              <button 
+                className="btn-post-project"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Posting...' : 'Post'}
+              </button>
             </div>
 
             {/* Header */}
             <div className="dash-page-hero create-project-hero">
               <h1 className="projects-page-title">Create New Project</h1>
               <p className="projects-page-subtitle">Showcase your work to the developer community.</p>
+              {error && (
+                <div style={{ 
+                  padding: '12px', 
+                  background: 'rgba(239, 68, 68, 0.1)', 
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '8px',
+                  color: '#ef4444',
+                  fontSize: '14px',
+                  marginTop: '16px'
+                }}>
+                  {error}
+                </div>
+              )}
             </div>
 
             {/* Form Container */}
@@ -76,11 +145,11 @@ const CreateProject = () => {
                 <div className="category-chips">
                   {categories.map(cat => (
                     <button 
-                      key={cat} 
-                      className={`cat-chip ${activeCategory === cat ? 'active' : ''}`}
-                      onClick={() => setActiveCategory(cat)}
+                      key={cat.value} 
+                      className={`cat-chip ${activeCategory === cat.value ? 'active' : ''}`}
+                      onClick={() => setActiveCategory(cat.value)}
                     >
-                      {activeCategory === cat && <Check size={14} />} {cat}
+                      {activeCategory === cat.value && <Check size={14} />} {cat.label}
                     </button>
                   ))}
                 </div>

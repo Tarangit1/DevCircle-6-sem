@@ -6,11 +6,15 @@ import Sidebar from './dashboard/Sidebar';
 import PostCard from './dashboard/PostCard';
 import RightWidgets from './dashboard/RightWidgets';
 import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
+  const { currentUser } = useAuth();
   const [posts, setPosts] = useState([]);
   const [widgetData, setWidgetData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [postContent, setPostContent] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
   
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -31,6 +35,31 @@ const Home = () => {
     fetchHomeData();
   }, []);
 
+  const handleCreatePost = async () => {
+    if (!postContent.trim()) {
+      alert('Please enter some content for your post');
+      return;
+    }
+
+    try {
+      setIsPosting(true);
+      const newPost = await api.createPost({
+        content: postContent,
+        type: 'discussion'
+      });
+      
+      // Add the new post to the top of the feed
+      setPosts([newPost, ...posts]);
+      setPostContent('');
+      
+    } catch (error) {
+      console.error("Failed to create post", error);
+      alert('Failed to create post. Please try again.');
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
   return (
     <div className="dashboard-container">
       <Sidebar activeTab="home" />
@@ -42,9 +71,29 @@ const Home = () => {
           <div className="dash-page-hero">
             {/* Create Post Box */}
             <div className="create-post-box">
-              <img src="https://i.pravatar.cc/150?img=11" alt="User" className="post-avatar" />
-              <input type="text" placeholder="What are you building or thinking?" />
-              <button className="btn-post">Post</button>
+              <img 
+                src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
+                alt="User" 
+                className="post-avatar" 
+              />
+              <input 
+                type="text" 
+                placeholder="What are you building or thinking?" 
+                value={postContent}
+                onChange={(e) => setPostContent(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !isPosting) {
+                    handleCreatePost();
+                  }
+                }}
+              />
+              <button 
+                className="btn-post" 
+                onClick={handleCreatePost}
+                disabled={isPosting}
+              >
+                {isPosting ? 'Posting...' : 'Post'}
+              </button>
             </div>
 
             {/* Feed Filters */}

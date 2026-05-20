@@ -1,11 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, ChevronDown, MessageSquare, Monitor, Filter as FilterIcon } from 'lucide-react';
 import Sidebar from './dashboard/Sidebar';
 import './Bounties.css';
-import { fullBounties } from '../data/mockData';
+import { api } from '../api';
 
 const Bounties = () => {
   const [activeTab, setActiveTab] = useState('All');
+  const [bounties, setBounties] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBounties = async () => {
+      try {
+        setIsLoading(true);
+        const data = await api.getBounties();
+        setBounties(data);
+      } catch (error) {
+        console.error('Failed to load bounties:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchBounties();
+  }, []);
 
   return (
     <div className="dashboard-container">
@@ -46,8 +63,17 @@ const Bounties = () => {
               </div>
 
               <div className="bounties-feed">
-                {fullBounties.map(bounty => (
-                  <div key={bounty.id} className="bounty-card">
+                {isLoading ? (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                    Loading bounties...
+                  </div>
+                ) : bounties.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                    No bounties found
+                  </div>
+                ) : (
+                  bounties.map(bounty => (
+                    <div key={bounty.id} className="bounty-card">
 
                     <div className="bounty-left-col">
                       <div className={`bounty-icon-lg ${bounty.iconBg} ${bounty.iconColor}`}>
@@ -96,7 +122,8 @@ const Bounties = () => {
                     </div>
 
                   </div>
-                ))}
+                ))
+                )}
               </div>
 
             </div>

@@ -1,108 +1,162 @@
-import { 
-  mockPosts, 
-  trendingProjects, 
-  topDevelopers, 
-  activeBounties, 
-  popularTags,
-  mockProjects,
-  topProjectsThisWeek,
-  fullBounties,
-  leaderboardData,
-  mockChats
-} from '../data/mockData';
+import axios from 'axios';
 
-// Simulate network delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const BASE_URL = 'http://localhost:5000/api';
+
+// Create axios instance with default config
+const axiosInstance = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Add token to requests if available
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export const api = {
   // Feed & Home
   getFeedPosts: async () => {
-    await delay(600);
-    return mockPosts;
+    const response = await axiosInstance.get('/posts');
+    return response.data;
   },
   
   // Projects
   getProjects: async () => {
-    await delay(700);
-    return mockProjects;
+    const response = await axiosInstance.get('/projects');
+    return response.data;
   },
   
   // Bounties
   getBounties: async () => {
-    await delay(500);
-    return fullBounties;
+    const response = await axiosInstance.get('/bounties');
+    return response.data;
   },
 
   // Leaderboard
   getLeaderboard: async () => {
-    await delay(600);
-    return leaderboardData;
+    const response = await axiosInstance.get('/leaderboard');
+    return response.data;
   },
 
   // Messages
   getMessages: async () => {
-    await delay(400);
-    return mockChats;
+    const response = await axiosInstance.get('/chats');
+    return response.data;
   },
 
   // Right Widgets Data
   getWidgetData: async () => {
-    await delay(500);
-    return {
-      trending: trendingProjects,
-      topDevs: topDevelopers,
-      bounties: activeBounties,
-      tags: popularTags
-    };
+    const response = await axiosInstance.get('/widgets');
+    return response.data;
   },
 
   // Profile
   getUserProfile: async (username) => {
-    await delay(600);
-    return {
-      fullName: "Priyanshu",
-      username: "priyanshu_dev",
-      avatar: "https://i.pravatar.cc/150?img=12",
-      badge: "Frontend Wizard",
-      bio: "Building cool stuff for the web. Love Next.js and Tailwind.",
-      connectionsCount: 245,
-      joinedDate: "Joined March 2024",
-      projects: mockProjects.slice(0, 2),
-      posts: mockPosts.slice(0, 1)
-    };
+    const response = await axiosInstance.get(`/users/${username}`);
+    return response.data;
   },
 
   // Post Detail
   getPostDetail: async (id) => {
-    await delay(700);
-    return {
-      ...mockPosts[0],
-      comments: [
-        {
-          id: 101,
-          author: { name: "Ananya Sharma", handle: "@code.with.ananya", avatar: "https://i.pravatar.cc/150?img=5" },
-          content: "This looks amazing! What database are you using behind the scenes?",
-          timeAgo: "2h",
-          isWinner: false,
-          replies: [
-            {
-              id: 102,
-              author: { name: "Priyanshu", handle: "@priyanshu_dev", avatar: "https://i.pravatar.cc/150?img=12" },
-              content: "Thanks! I'm using PostgreSQL with Prisma.",
-              timeAgo: "1h",
-              isWinner: false
-            }
-          ]
-        },
-        {
-          id: 103,
-          author: { name: "Rohit Verma", handle: "@rohitthedev", avatar: "https://i.pravatar.cc/150?img=15" },
-          content: "I ran into a small bug on mobile view. The sidebar doesn't close properly.",
-          timeAgo: "3h",
-          isWinner: true, // Example of bounty winner
-          replies: []
-        }
-      ]
-    };
+    const response = await axiosInstance.get(`/posts/${id}`);
+    return response.data;
+  },
+
+  // Auth
+  register: async (userData) => {
+    const response = await axiosInstance.post('/auth/register', userData);
+    return response.data;
+  },
+
+  login: async (credentials) => {
+    const response = await axiosInstance.post('/auth/login', credentials);
+    return response.data;
+  },
+
+  getCurrentUser: async () => {
+    const response = await axiosInstance.get('/auth/me');
+    return response.data;
+  },
+
+  // Post Actions
+  createPost: async (postData) => {
+    const response = await axiosInstance.post('/posts', postData);
+    return response.data;
+  },
+
+  likePost: async (postId) => {
+    const response = await axiosInstance.post(`/posts/${postId}/like`);
+    return response.data;
+  },
+
+  bookmarkPost: async (postId) => {
+    const response = await axiosInstance.post(`/posts/${postId}/bookmark`);
+    return response.data;
+  },
+
+  addComment: async (postId, commentData) => {
+    const response = await axiosInstance.post(`/posts/${postId}/comments`, commentData);
+    return response.data;
+  },
+
+  markCommentAsWinner: async (postId, commentId) => {
+    const response = await axiosInstance.patch(`/posts/${postId}/comments/${commentId}/winner`);
+    return response.data;
+  },
+
+  // User Actions
+  updateProfile: async (profileData) => {
+    console.log('API: Sending profile update request with data:', profileData);
+    try {
+      const response = await axiosInstance.patch('/users/me', profileData);
+      console.log('API: Profile update response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API: Profile update error:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  connectWithUser: async (userId) => {
+    const response = await axiosInstance.post(`/users/${userId}/connect`);
+    return response.data;
+  },
+
+  // Chat Actions
+  createOrGetChat: async (userId) => {
+    const response = await axiosInstance.post('/chats', { userId });
+    return response.data;
+  },
+
+  sendMessage: async (chatId, text) => {
+    const response = await axiosInstance.post(`/chats/${chatId}/messages`, { text });
+    return response.data;
+  },
+
+  markChatAsRead: async (chatId) => {
+    const response = await axiosInstance.patch(`/chats/${chatId}/read`);
+    return response.data;
+  },
+
+  // Notifications
+  getNotifications: async () => {
+    const response = await axiosInstance.get('/notifications');
+    return response.data;
+  },
+
+  markNotificationAsRead: async (notificationId) => {
+    const response = await axiosInstance.patch(`/notifications/${notificationId}/read`);
+    return response.data;
+  },
+
+  markAllNotificationsAsRead: async () => {
+    const response = await axiosInstance.patch('/notifications/read-all');
+    return response.data;
   }
 };

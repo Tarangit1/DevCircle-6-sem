@@ -1,8 +1,98 @@
-import React from 'react';
-import { Heart, MessageSquare, Share2, Bookmark, CheckCircle2, Code2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Heart, MessageSquare, Share2, Bookmark, CheckCircle2, Code2, UserPlus, UserCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { api } from '../../api';
+import { useAuth } from '../../context/AuthContext';
 
 const PostCard = ({ post }) => {
+  const navigate = useNavigate();
+  const { isAuthenticated, currentUser } = useAuth();
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(post.stats.likes);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const isOwnPost = currentUser?.username === post.author.handle.replace('@', '');
+
+  const handleConnect = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (isConnecting) return;
+
+    try {
+      setIsConnecting(true);
+      const result = await api.connectWithUser(post.author.id);
+      setConnected(result.connected);
+    } catch (error) {
+      console.error('Failed to connect:', error);
+      if (error.response?.status === 401) {
+        navigate('/login');
+      }
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleLike = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (isLiking) return;
+
+    try {
+      setIsLiking(true);
+      const result = await api.likePost(post.id);
+      setLiked(result.liked);
+      setLikesCount(result.likesCount);
+    } catch (error) {
+      console.error('Failed to like post:', error);
+      if (error.response?.status === 401) {
+        navigate('/login');
+      }
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const handleBookmark = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (isBookmarking) return;
+
+    try {
+      setIsBookmarking(true);
+      const result = await api.bookmarkPost(post.id);
+      setBookmarked(result.bookmarked);
+    } catch (error) {
+      console.error('Failed to bookmark post:', error);
+      if (error.response?.status === 401) {
+        navigate('/login');
+      }
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
+
   const getBadgeClass = (badge) => {
     switch(badge.toLowerCase()) {
       case 'building': return 'badge-building';
@@ -25,7 +115,28 @@ const PostCard = ({ post }) => {
             <span className="author-handle">{post.author.handle} • {post.timeAgo}</span>
           </div>
         </div>
-        <span className={`post-badge ${getBadgeClass(post.badge)}`}>{post.badge}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {!isOwnPost && (
+            <button 
+              className={`connect-btn ${connected ? 'connected' : ''}`}
+              onClick={handleConnect}
+              disabled={isConnecting}
+            >
+              {connected ? (
+                <>
+                  <UserCheck size={16} />
+                  Connected
+                </>
+              ) : (
+                <>
+                  <UserPlus size={16} />
+                  Connect
+                </>
+              )}
+            </button>
+          )}
+          <span className={`post-badge ${getBadgeClass(post.badge)}`}>{post.badge}</span>
+        </div>
       </div>
       
       {post.bountyAmount ? (
@@ -73,10 +184,24 @@ const PostCard = ({ post }) => {
       )}
 
       <div className={`post-actions ${post.bountyAmount || (!post.tags.length && !post.mockImage) ? 'mt-4' : ''}`}>
-        <button className="action-btn"><Heart size={18} /> {post.stats.likes}</button>
+        <button 
+          className={`action-btn ${liked ? 'liked' : ''}`} 
+          onClick={handleLike}
+          disabled={isLiking}
+          style={{ color: liked ? '#ef4444' : 'inherit' }}
+        >
+          <Heart size={18} fill={liked ? 'currentColor' : 'none'} /> {likesCount}
+        </button>
         <button className="action-btn"><MessageSquare size={18} /> {post.stats.comments}</button>
         <button className="action-btn"><Share2 size={18} /> Share</button>
-        <button className="action-btn ml-auto"><Bookmark size={18} /></button>
+        <button 
+          className={`action-btn ml-auto ${bookmarked ? 'bookmarked' : ''}`}
+          onClick={handleBookmark}
+          disabled={isBookmarking}
+          style={{ color: bookmarked ? '#3b82f6' : 'inherit' }}
+        >
+          <Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} />
+        </button>
       </div>
     </Link>
   );
