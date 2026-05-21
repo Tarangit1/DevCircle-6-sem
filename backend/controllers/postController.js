@@ -4,6 +4,33 @@ import User from '../models/User.js';
 import { transformPost, transformUser, getTimeAgo } from '../utils/helpers.js';
 import { createNotification } from './notificationController.js';
 
+// @desc    Get user's bookmarked posts
+// @route   GET /api/posts/bookmarks
+// @access  Private
+export const getBookmarks = async (req, res) => {
+  try {
+    const posts = await Post.find({ bookmarks: req.user._id })
+      .populate('authorId')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Get comment counts
+    const postsWithCounts = await Promise.all(
+      posts.map(async (post) => {
+        const commentCount = await Comment.countDocuments({ postId: post._id });
+        return { ...post, commentCount };
+      })
+    );
+
+    const transformedPosts = postsWithCounts.map(post => transformPost(post, true, req.user));
+
+    res.json(transformedPosts);
+  } catch (error) {
+    console.error('Get bookmarks error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // @desc    Get all feed posts
 // @route   GET /api/posts
 // @access  Public
@@ -22,7 +49,7 @@ export const getFeedPosts = async (req, res) => {
       })
     );
 
-    const transformedPosts = postsWithCounts.map(post => transformPost(post));
+    const transformedPosts = postsWithCounts.map(post => transformPost(post, true, req.user));
     res.json(transformedPosts);
   } catch (error) {
     console.error('Get feed posts error:', error);
@@ -48,7 +75,7 @@ export const getProjects = async (req, res) => {
     );
 
     const transformedProjects = projectsWithCounts.map(project => {
-      const transformed = transformPost(project);
+      const transformed = transformPost(project, true, req.user);
       // Add verified flag from post if exists
       if (project.authorId) {
         transformed.verified = project.authorId.verified;
@@ -81,7 +108,7 @@ export const getBounties = async (req, res) => {
     );
 
     const transformedBounties = bountiesWithCounts.map(bounty => {
-      const transformed = transformPost(bounty);
+      const transformed = transformPost(bounty, true, req.user);
       transformed.amount = bounty.bountyAmount;
       transformed.comments = bounty.commentCount;
       return transformed;
@@ -146,7 +173,7 @@ export const getPostDetail = async (req, res) => {
     );
 
     const commentCount = await Comment.countDocuments({ postId: post._id });
-    const transformedPost = transformPost({ ...post, commentCount });
+    const transformedPost = transformPost({ ...post, commentCount }, true, req.user);
     
     res.json({
       ...transformedPost,
@@ -182,7 +209,7 @@ export const createPost = async (req, res) => {
     });
 
     const populatedPost = await Post.findById(post._id).populate('authorId').lean();
-    const transformedPost = transformPost(populatedPost);
+    const transformedPost = transformPost(populatedPost, true, req.user);
 
     res.status(201).json(transformedPost);
   } catch (error) {
@@ -221,7 +248,7 @@ export const updatePost = async (req, res) => {
     await post.save();
 
     const updatedPost = await Post.findById(post._id).populate('authorId').lean();
-    const transformedPost = transformPost(updatedPost);
+    const transformedPost = transformPost(updatedPost, true, req.user);
 
     res.json(transformedPost);
   } catch (error) {
@@ -274,6 +301,17 @@ export const toggleLike = async (req, res) => {
     } else {
       // Like
       post.likes.push(req.user._id);
+
+      // Notify post author if it's someone else liking their post
+      if (post.authorId.toString() !== req.user._id.toString()) {
+        await createNotification(
+          post.authorId,
+          req.user._id,
+          'like',
+          'liked your post',
+          { postId: post._id, postTitle: post.title }
+        );
+      }
     }
 
     await post.save();
@@ -343,6 +381,28 @@ export const addComment = async (req, res) => {
       parentCommentId: parentCommentId || null
     });
 
+    // Notify author of post or parent comment
+    if (parentCommentId) {
+      const parentComment = await Comment.findById(parentCommentId);
+      if (parentComment && parentComment.authorId.toString() !== req.user._id.toString()) {
+        await createNotification(
+          parentComment.authorId,
+          req.user._id,
+          'comment',
+          'replied to your comment',
+          { postId: post._id, postTitle: post.title }
+        );
+      }
+    } else if (post.authorId.toString() !== req.user._id.toString()) {
+      await createNotification(
+        post.authorId,
+        req.user._id,
+        'comment',
+        'commented on your post',
+        { postId: post._id, postTitle: post.title }
+      );
+    }
+
     const populatedComment = await Comment.findById(comment._id)
       .populate('authorId')
       .lean();
@@ -379,6 +439,10 @@ export const markCommentAsWinner = async (req, res) => {
     // Check if user is post owner
     if (post.authorId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Only post owner can mark winners' });
+    }
+
+    if (post.status === 'Solved') {
+      return res.status(400).json({ message: 'Bounty is already solved' });
     }
 
     const comment = await Comment.findById(req.params.commentId).populate('authorId');

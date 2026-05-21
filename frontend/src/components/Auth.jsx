@@ -28,12 +28,30 @@ const Auth = ({ defaultMode = 'login' }) => {
     password: '',
     confirmPassword: '',
     bio: '',
-    badge: ''
+    badge: '',
+    avatar: ''
   });
 
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isCustomBadge, setIsCustomBadge] = useState(false);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setUploadingImage(true);
+    // Add logic to upload image to your backend/service here
+    // For now, we'll simulate it with a FileReader
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSignupForm(prev => ({ ...prev, avatar: reader.result }));
+      setUploadingImage(false);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -87,7 +105,8 @@ const Auth = ({ defaultMode = 'login' }) => {
         email: signupForm.email,
         password: signupForm.password,
         bio: signupForm.bio,
-        badge: signupForm.badge
+        badge: signupForm.badge,
+        avatar: signupForm.avatar
       });
 
       if (result.success) {
@@ -228,25 +247,42 @@ const Auth = ({ defaultMode = 'login' }) => {
               </div>
             )}
 
-            <div className="form-row-profile">
-              <div className="form-group profile-upload-group">
-                <label>Profile Picture</label>
-                <div className="profile-upload-circle">
-                  <Upload size={20} />
-                  <span>Auto Generated</span>
-                </div>
+            <div className="form-group">
+              <label>Full Name</label>
+              <div className="input-wrapper">
+                <input 
+                  type="text" 
+                  placeholder="Enter your full name" 
+                  value={signupForm.fullName}
+                  onChange={(e) => setSignupForm({...signupForm, fullName: e.target.value})}
+                  required
+                />
               </div>
-              <div className="form-group flex-1">
-                <label>Full Name</label>
-                <div className="input-wrapper">
-                  <input 
-                    type="text" 
-                    placeholder="Enter your full name" 
-                    value={signupForm.fullName}
-                    onChange={(e) => setSignupForm({...signupForm, fullName: e.target.value})}
-                    required
-                  />
-                </div>
+            </div>
+
+            <div className="form-group">
+              <label>Avatar / Profile Picture</label>
+              <div className="input-wrapper">
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      try {
+                        setUploadingImage(true);
+                        const result = await api.uploadImage(file);
+                        setSignupForm({ ...signupForm, avatar: result.url });
+                      } catch (err) {
+                        console.error('Failed to upload avatar', err);
+                      } finally {
+                        setUploadingImage(false);
+                      }
+                    }
+                  }}
+                  style={{ padding: '8px 12px' }}
+                />
+                {uploadingImage && <span style={{fontSize: '12px', color: '#888', marginLeft: '10px'}}>Uploading...</span>}
               </div>
             </div>
 
@@ -327,23 +363,42 @@ const Auth = ({ defaultMode = 'login' }) => {
             <div className="form-group badge-group">
               <label>Choose Your Developer Badge</label>
               <div className="badge-options">
-                <div className="input-wrapper badge-select">
-                  <select 
-                    value={signupForm.badge}
-                    onChange={(e) => setSignupForm({...signupForm, badge: e.target.value})}
-                  >
-                    <option value="" disabled hidden>Select a badge</option>
-                    <option value="frontend">Frontend Dev</option>
-                    <option value="backend">Backend Dev</option>
-                    <option value="fullstack">Fullstack Dev</option>
-                    <option value="devops">DevOps</option>
-                  </select>
-                  <ChevronDown className="input-icon-right" size={16} />
-                </div>
+                {isCustomBadge ? (
+                  <div className="input-wrapper flex-1">
+                    <input 
+                      type="text" 
+                      placeholder="e.g. AI Engineer" 
+                      value={signupForm.badge}
+                      onChange={(e) => setSignupForm({...signupForm, badge: e.target.value})}
+                      maxLength={30}
+                    />
+                  </div>
+                ) : (
+                  <div className="input-wrapper badge-select">
+                    <select 
+                      value={signupForm.badge}
+                      onChange={(e) => setSignupForm({...signupForm, badge: e.target.value})}
+                    >
+                      <option value="" disabled hidden>Select a badge</option>
+                      <option value="Frontend Dev">Frontend Dev</option>
+                      <option value="Backend Dev">Backend Dev</option>
+                      <option value="Fullstack Dev">Fullstack Dev</option>
+                      <option value="DevOps">DevOps</option>
+                    </select>
+                    <ChevronDown className="input-icon-right" size={16} />
+                  </div>
+                )}
                 <span className="badge-or">or</span>
-                <button type="button" className="custom-badge-btn">
+                <button 
+                  type="button" 
+                  className="custom-badge-btn"
+                  onClick={() => {
+                    setIsCustomBadge(!isCustomBadge);
+                    setSignupForm({...signupForm, badge: ''});
+                  }}
+                >
                   <PenLine size={16} />
-                  Create Custom Badge
+                  {isCustomBadge ? 'Choose from list' : 'Create Custom Badge'}
                 </button>
               </div>
             </div>

@@ -10,6 +10,8 @@ import userRoutes from './routes/userRoutes.js';
 import widgetRoutes from './routes/widgetRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
+import path from 'path';
 
 // Load env vars
 dotenv.config();
@@ -37,6 +39,11 @@ app.use('/api', userRoutes);
 app.use('/api', widgetRoutes);
 app.use('/api', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// Make uploads folder static
+const __dirname = path.resolve();
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check
 app.get('/api/health', (req, res) => {

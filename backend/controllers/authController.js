@@ -7,7 +7,7 @@ import { generateToken, transformUser } from '../utils/helpers.js';
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { fullName, username, email, password } = req.body;
+    const { fullName, username, email, password, avatar } = req.body;
 
     // Validation
     if (!fullName || !username || !email || !password) {
@@ -26,14 +26,16 @@ export const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user with initials-based avatar
+    // Create user with initials-based avatar if none provided
     const initials = fullName.split(' ').map(name => name[0]).join('').toUpperCase().substring(0, 2);
+    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=6366f1&color=ffffff&size=150&bold=true`;
+    
     const user = await User.create({
       fullName,
       username: username.toLowerCase(),
       email: email.toLowerCase(),
       password: hashedPassword,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=6366f1&color=ffffff&size=150&bold=true`
+      avatar: avatar || defaultAvatar
     });
 
     if (user) {
@@ -49,7 +51,10 @@ export const register = async (req, res) => {
           bio: user.bio,
           verified: user.verified,
           unreadMessages: user.unreadMessages,
-          unreadNotifications: user.unreadNotifications
+          unreadNotifications: user.unreadNotifications,
+          connectionsCount: user.connections ? user.connections.length : 0,
+          connections: user.connections || [],
+          joinedDate: user.joinedDate
         }
       });
     }
@@ -101,7 +106,10 @@ export const login = async (req, res) => {
         bio: user.bio,
         verified: user.verified,
         unreadMessages: user.unreadMessages,
-        unreadNotifications: user.unreadNotifications
+        unreadNotifications: user.unreadNotifications,
+        connectionsCount: user.connections ? user.connections.length : 0,
+        connections: user.connections || [],
+        joinedDate: user.joinedDate
       }
     });
   } catch (error) {

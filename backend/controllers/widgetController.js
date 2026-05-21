@@ -123,11 +123,34 @@ export const getWidgetData = async (req, res) => {
 // @access  Public
 export const getLeaderboard = async (req, res) => {
   try {
-    const topProjects = await Post.find({ badge: 'Building' })
-      .populate('authorId')
-      .sort({ 'likes': -1 })
-      .limit(10)
-      .lean();
+    const { timeframe } = req.query;
+    let dateFilter = {};
+
+    if (timeframe === 'This Week') {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      dateFilter.createdAt = { $gte: oneWeekAgo };
+    } else if (timeframe === 'This Month') {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+      dateFilter.createdAt = { $gte: oneMonthAgo };
+    }
+
+    const topProjects = await Post.aggregate([
+      { $match: { badge: 'Building', ...dateFilter } },
+      { $addFields: { likesCount: { $size: { $ifNull: ["$likes", []] } } } },
+      { $sort: { likesCount: -1, createdAt: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'authorId',
+          foreignField: '_id',
+          as: 'authorId'
+        }
+      },
+      { $unwind: { path: '$authorId', preserveNullAndEmptyArrays: true } }
+    ]);
 
     const leaderboard = topProjects.map((project, index) => ({
       rank: index + 1,
@@ -136,7 +159,7 @@ export const getLeaderboard = async (req, res) => {
       verified: project.authorId?.verified || false,
       desc: project.desc,
       author: `@${project.authorId?.username || 'unknown'}`,
-      likes: formatLikes(project.likes.length),
+      likes: formatLikes(project.likesCount),
       image: project.thumbnail || `https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=150&q=80`,
       badge: index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : undefined
     }));

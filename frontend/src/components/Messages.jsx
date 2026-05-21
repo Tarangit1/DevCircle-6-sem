@@ -3,10 +3,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import Sidebar from './dashboard/Sidebar';
 import './Messages.css';
 import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
 import { Search, Edit, MoreHorizontal, Paperclip, Send } from 'lucide-react';
 
 const Messages = () => {
   const navigate = useNavigate();
+  const { currentUser, updateUser } = useAuth();
   const [activeChatId, setActiveChatId] = useState(null);
   const [messageInput, setMessageInput] = useState('');
   const [chats, setChats] = useState([]);
@@ -24,9 +26,26 @@ const Messages = () => {
         setIsLoading(true);
         setError(null);
         const data = await api.getMessages();
-        setChats(data);
+        
         if (data.length > 0) {
-          setActiveChatId(data[0].id);
+          const firstChat = data[0];
+          setActiveChatId(firstChat.id);
+          
+          if (firstChat.unread > 0) {
+            const unreadCount = firstChat.unread;
+            firstChat.unread = 0;
+            setChats(data);
+            
+            api.markChatAsRead(firstChat.id).then(() => {
+              if (currentUser && currentUser.unreadMessages > 0) {
+                updateUser({ unreadMessages: Math.max(0, currentUser.unreadMessages - unreadCount) });
+              }
+            }).catch(console.error);
+          } else {
+            setChats(data);
+          }
+        } else {
+          setChats(data);
         }
       } catch (error) {
         setError('Failed to load messages. Please try again.');
@@ -36,17 +55,22 @@ const Messages = () => {
       }
     };
     fetchChats();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSelectChat = async (chatId) => {
     setActiveChatId(chatId);
     const chat = chats.find(c => c.id === chatId);
     if (chat && chat.unread > 0) {
+      const unreadCount = chat.unread;
       try {
         await api.markChatAsRead(chatId);
         setChats(prevChats => 
           prevChats.map(c => c.id === chatId ? { ...c, unread: 0 } : c)
         );
+        if (currentUser && currentUser.unreadMessages > 0) {
+          updateUser({ unreadMessages: Math.max(0, currentUser.unreadMessages - unreadCount) });
+        }
       } catch (error) {
         console.error('Failed to mark as read:', error);
       }

@@ -15,6 +15,8 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('projects');
+  const [bookmarks, setBookmarks] = useState([]);
+  const [isLoadingBookmarks, setIsLoadingBookmarks] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     fullName: '',
@@ -59,6 +61,23 @@ const Profile = () => {
     fetchProfile();
   }, [username, currentUser]);
 
+  useEffect(() => {
+    if (activeTab === 'bookmarks' && isOwnProfile && bookmarks.length === 0) {
+      const fetchBookmarks = async () => {
+        try {
+          setIsLoadingBookmarks(true);
+          const data = await api.getBookmarks();
+          setBookmarks(data);
+        } catch (err) {
+          console.error('Failed to load bookmarks', err);
+        } finally {
+          setIsLoadingBookmarks(false);
+        }
+      };
+      fetchBookmarks();
+    }
+  }, [activeTab, isOwnProfile, bookmarks.length]);
+
   const handleSaveProfile = async () => {
     try {
       setIsSaving(true);
@@ -91,9 +110,22 @@ const Profile = () => {
     setEditForm({ ...editForm, skills: editForm.skills.filter(s => s !== skill) });
   };
 
-  const handleAvatarChange = (url) => {
-    setEditForm({ ...editForm, avatar: url });
-    setAvatarPreview(url);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        setIsUploadingAvatar(true);
+        const result = await api.uploadImage(file);
+        setEditForm({ ...editForm, avatar: result.url });
+        setAvatarPreview(result.url);
+      } catch (err) {
+        console.error('Failed to upload avatar', err);
+      } finally {
+        setIsUploadingAvatar(false);
+      }
+    }
   };
 
   const handleToggleFollow = async () => {
@@ -215,17 +247,18 @@ const result = await api.connectWithUser(profile.id);
                   {isEditing ? (
                     <div className="edit-profile-form">
                       <div className="form-group-edit">
-                        <label>Profile Picture URL</label>
+                        <label>Profile Picture</label>
                         <div className="avatar-url-row">
                           <input 
-                            type="url"
+                            type="file"
+                            accept="image/*"
                             id="avatar-url-input"
-                            placeholder="https://example.com/avatar.png"
-                            value={editForm.avatar}
-                            onChange={(e) => handleAvatarChange(e.target.value)}
+                            onChange={handleAvatarChange}
                             className="edit-input"
+                            style={{ padding: '8px 12px' }}
                           />
-                          {avatarPreview && (
+                          {isUploadingAvatar && <span style={{fontSize: '12px', color: '#888', marginLeft: '10px'}}>Uploading...</span>}
+                          {avatarPreview && !isUploadingAvatar && (
                             <img src={avatarPreview} alt="Preview" className="avatar-preview-sm" onError={(e) => e.target.style.display = 'none'} />
                           )}
                         </div>
@@ -359,6 +392,14 @@ const result = await api.connectWithUser(profile.id);
               >
                 Posts & Threads
               </button>
+              {isOwnProfile && (
+                <button 
+                  className={`prof-tab ${activeTab === 'bookmarks' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('bookmarks')}
+                >
+                  Bookmarks
+                </button>
+              )}
             </div>
 
             <div className="profile-content-list">
@@ -380,6 +421,20 @@ const result = await api.connectWithUser(profile.id);
               {activeTab === 'posts' && profile.posts.length === 0 && (
                 <div className="empty-state">
                   <p>No posts yet</p>
+                </div>
+              )}
+
+              {activeTab === 'bookmarks' && isLoadingBookmarks && (
+                <div className="empty-state">
+                  <p>Loading bookmarks...</p>
+                </div>
+              )}
+              {activeTab === 'bookmarks' && !isLoadingBookmarks && bookmarks.length > 0 && bookmarks.map(post => (
+                <PostCard key={post.id} post={post} />
+              ))}
+              {activeTab === 'bookmarks' && !isLoadingBookmarks && bookmarks.length === 0 && (
+                <div className="empty-state">
+                  <p>No bookmarks yet</p>
                 </div>
               )}
             </div>

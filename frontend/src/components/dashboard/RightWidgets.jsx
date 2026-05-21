@@ -47,7 +47,7 @@ const RightWidgets = ({ trendingProjects, topDevelopers, activeBounties, popular
             </div>
           ))}
         </div>
-        <a href="#" className="widget-link">View leaderboard <ArrowRight size={14} /></a>
+        <Link to="/leaderboard" className="widget-link">View leaderboard <ArrowRight size={14} /></Link>
       </div>
 
       {/* Active Bounties */}
@@ -86,7 +86,6 @@ const RightWidgets = ({ trendingProjects, topDevelopers, activeBounties, popular
             </span>
           ))}
         </div>
-        <a href="#" className="widget-link mt-4 inline-flex">View all tags <ArrowRight size={14} /></a>
       </div>
     </aside>
   );
