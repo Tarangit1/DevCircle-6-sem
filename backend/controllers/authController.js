@@ -129,6 +129,7 @@ export const getMe = async (req, res) => {
       unreadMessages: user.unreadMessages,
       unreadNotifications: user.unreadNotifications,
       connectionsCount: user.connections.length,
+      connections: user.connections,
       joinedDate: user.joinedDate
     });
   } catch (error) {

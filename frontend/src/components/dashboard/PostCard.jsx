@@ -6,14 +6,16 @@ import { useAuth } from '../../context/AuthContext';
 
 const PostCard = ({ post }) => {
   const navigate = useNavigate();
-  const { isAuthenticated, currentUser } = useAuth();
+  const { isAuthenticated, currentUser, updateUser } = useAuth();
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.stats.likes);
   const [bookmarked, setBookmarked] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
-  const [connected, setConnected] = useState(false);
+  
   const [isConnecting, setIsConnecting] = useState(false);
+  const isConnected = currentUser?.connections?.includes(post.author.id);
+  const [showConnected, setShowConnected] = useState(false);
 
   const isOwnPost = currentUser?.username === post.author.handle.replace('@', '');
 
@@ -29,9 +31,13 @@ const PostCard = ({ post }) => {
     if (isConnecting) return;
 
     try {
-      setIsConnecting(true);
+setIsConnecting(true);
       const result = await api.connectWithUser(post.author.id);
-      setConnected(result.connected);
+      if (result && result.connected) {
+        updateUser({ connections: [...(currentUser?.connections || []), post.author.id] });
+        setShowConnected(true);
+        setTimeout(() => setShowConnected(false), 1500);
+      }
     } catch (error) {
       console.error('Failed to connect:', error);
       if (error.response?.status === 401) {
@@ -127,23 +133,22 @@ const PostCard = ({ post }) => {
 </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {!isOwnPost && (
-            <button 
-              className={`connect-btn ${connected ? 'connected' : ''}`}
-              onClick={handleConnect}
-              disabled={isConnecting}
-            >
-              {connected ? (
-                <>
-                  <UserCheck size={16} />
-                  Connected
-                </>
-              ) : (
-                <>
-                  <UserPlus size={16} />
-                  Connect
-                </>
+            <>
+              {!isConnected && !showConnected && (
+                <button 
+                  className="connect-btn"
+                  onClick={handleConnect}
+                  disabled={isConnecting}
+                >
+                  <UserPlus size={16} /> Follow
+                </button>
               )}
-            </button>
+              {showConnected && (
+                <span className="connected-label">
+                  <UserCheck size={16} /> Followed
+                </span>
+              )}
+            </>
           )}
           <span className={`post-badge ${getBadgeClass(post.badge)}`}>{post.badge}</span>
         </div>

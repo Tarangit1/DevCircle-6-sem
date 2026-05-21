@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import Sidebar from './dashboard/Sidebar';
 import { api } from '../api';
 import { Bell, Award, UserPlus, MessageSquare, Heart, CheckCircle } from 'lucide-react';
@@ -29,12 +30,17 @@ const Notifications = () => {
     fetchNotifications();
   }, []);
 
-  const handleMarkAsRead = async (notificationId) => {
+  const { updateUser } = useAuth();
+
+const handleMarkAsRead = async (notificationId) => {
     try {
       await api.markNotificationAsRead(notificationId);
-      setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-      );
+setNotifications(prev => {
+            const updated = prev.map(n => n.id === notificationId ? { ...n, read: true } : n);
+            const newUnread = updated.filter(n => !n.read).length;
+            updateUser({ unreadNotifications: newUnread });
+            return updated;
+          });
     } catch (error) {
       console.error('Failed to mark as read:', error);
     }
@@ -43,7 +49,11 @@ const Notifications = () => {
   const handleMarkAllAsRead = async () => {
     try {
       await api.markAllNotificationsAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotifications(prev => {
+          const updated = prev.map(n => ({ ...n, read: true }));
+          updateUser({ unreadNotifications: 0 });
+          return updated;
+        });
     } catch (error) {
       console.error('Failed to mark all as read:', error);
     }
