@@ -5,6 +5,8 @@ import {
   getBounties,
   getPostDetail,
   createPost,
+  updatePost,
+  deletePost,
   toggleLike,
   toggleBookmark,
   addComment,
@@ -20,6 +22,8 @@ router.get('/bounties', optionalAuth, getBounties);
 router.get('/posts/:id', optionalAuth, getPostDetail);
 
 router.post('/posts', protect, createPost);
+router.put('/posts/:id', protect, updatePost);
+router.delete('/posts/:id', protect, deletePost);
 router.post('/posts/:id/like', protect, toggleLike);
 router.post('/posts/:id/bookmark', protect, toggleBookmark);
 router.post('/posts/:id/comments', protect, addComment);

@@ -191,6 +191,70 @@ export const createPost = async (req, res) => {
   }
 };
 
+// @desc    Update post/project/bounty
+// @route   PUT /api/posts/:id
+// @access  Private (owner only)
+export const updatePost = async (req, res) => {
+  try {
+    const { title, desc, tags, badge, bountyAmount, category, deployedLink, thumbnail, status } = req.body;
+
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.authorId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to edit this post' });
+    }
+
+    if (title) post.title = title;
+    if (desc) post.desc = desc;
+    if (tags !== undefined) post.tags = tags;
+    if (badge !== undefined) post.badge = badge;
+    if (bountyAmount !== undefined) post.bountyAmount = bountyAmount;
+    if (category) post.category = category;
+    if (deployedLink !== undefined) post.deployedLink = deployedLink;
+    if (thumbnail !== undefined) post.thumbnail = thumbnail;
+    if (status) post.status = status;
+
+    await post.save();
+
+    const updatedPost = await Post.findById(post._id).populate('authorId').lean();
+    const transformedPost = transformPost(updatedPost);
+
+    res.json(transformedPost);
+  } catch (error) {
+    console.error('Update post error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Delete post/project/bounty
+// @route   DELETE /api/posts/:id
+// @access  Private (owner only)
+export const deletePost = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.authorId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to delete this post' });
+    }
+
+    await Comment.deleteMany({ postId: post._id });
+    await Post.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Post deleted successfully' });
+  } catch (error) {
+    console.error('Delete post error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // @desc    Like/unlike a post
 // @route   POST /api/posts/:id/like
 // @access  Private

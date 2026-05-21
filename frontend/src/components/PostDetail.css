@@ -26,6 +26,270 @@
   color: #fff;
 }
 
+.pd-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.pd-owner-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pd-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(59, 92, 255, 0.1);
+  border: 1px solid rgba(59, 92, 255, 0.2);
+  color: #60a5fa;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pd-edit-btn:hover {
+  background: rgba(59, 92, 255, 0.2);
+}
+
+.pd-delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pd-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.pd-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Edit Modal */
+.pd-edit-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.pd-edit-content {
+  background: #111118;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.pd-edit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pd-edit-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.pd-edit-close {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  transition: color 0.2s;
+}
+
+.pd-edit-close:hover {
+  color: #fff;
+}
+
+.pd-edit-form {
+  padding: 1.5rem;
+}
+
+.edit-field {
+  margin-bottom: 1.25rem;
+}
+
+.edit-field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #c0c0c0;
+}
+
+.edit-field .edit-input,
+.edit-field .edit-textarea,
+.edit-field .edit-select {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  background: #0a0a0f;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.edit-field .edit-input:focus,
+.edit-field .edit-textarea:focus,
+.edit-field .edit-select:focus {
+  outline: none;
+  border-color: #3b5cff;
+}
+
+.edit-field .edit-textarea {
+  resize: vertical;
+}
+
+.edit-field .edit-select {
+  cursor: pointer;
+}
+
+.edit-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.edit-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.3rem 0.6rem;
+  background: rgba(59, 92, 255, 0.1);
+  border: 1px solid rgba(59, 92, 255, 0.2);
+  border-radius: 4px;
+  color: #7c9aff;
+  font-size: 0.8rem;
+}
+
+.edit-tag-chip button {
+  background: none;
+  border: none;
+  color: #7c9aff;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.edit-tag-chip button:hover {
+  opacity: 1;
+}
+
+.edit-tag-add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.edit-tag-add .edit-input {
+  flex: 1;
+}
+
+.edit-tag-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.5rem 0.8rem;
+  background: #3b5cff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.edit-tag-btn:hover {
+  background: #2a3eb1;
+}
+
+.edit-actions-row {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.edit-cancel-btn {
+  padding: 0.6rem 1.2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #c0c0c0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.edit-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.edit-save-btn {
+  padding: 0.6rem 1.5rem;
+  background: #3b5cff;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.edit-save-btn:hover {
+  background: #2a3eb1;
+}
+
+.edit-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pd-bounty-amount {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #facc15;
+  margin-bottom: 1rem;
+}
+
 /* Post Card */
 .pd-card {
   background: #0a0a0f;

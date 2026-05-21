@@ -61,7 +61,7 @@ const Messages = () => {
     }
     try {
       setIsSearching(true);
-      const allUsers = await fetch('/api/users').then(r => r.json()).catch(() => []);
+      const allUsers = await api.getAllUsers();
       const filtered = allUsers.filter(u => 
         u.fullName.toLowerCase().includes(query.toLowerCase()) || 
         u.username.toLowerCase().includes(query.toLowerCase())

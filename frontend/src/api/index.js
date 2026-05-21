@@ -70,7 +70,12 @@ export const api = {
     return response.data;
   },
 
-  // Profile
+  // User Actions
+  getAllUsers: async () => {
+    const response = await axiosInstance.get('/users');
+    return response.data;
+  },
+
   getUserProfile: async (username) => {
     const response = await axiosInstance.get(`/users/${username}`);
     return response.data;
@@ -101,6 +106,16 @@ export const api = {
   // Post Actions
   createPost: async (postData) => {
     const response = await axiosInstance.post('/posts', postData);
+    return response.data;
+  },
+
+  updatePost: async (postId, postData) => {
+    const response = await axiosInstance.put(`/posts/${postId}`, postData);
+    return response.data;
+  },
+
+  deletePost: async (postId) => {
+    const response = await axiosInstance.delete(`/posts/${postId}`);
     return response.data;
   },
 

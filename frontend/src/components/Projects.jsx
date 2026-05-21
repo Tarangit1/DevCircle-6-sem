@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './Projects.css';
 import { ChevronDown, Heart, MessageSquare, Bookmark, CheckCircle2, ArrowRight, Plus, Filter as FilterIcon, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import DashboardHeader from './dashboard/DashboardHeader';
 import Sidebar from './dashboard/Sidebar';
 import { api } from '../api';
-import { useNavigate } from 'react-router-dom';
 
 const Projects = () => {
   const navigate = useNavigate();
@@ -87,7 +87,7 @@ const Projects = () => {
                 </div>
               ) : (
                 projects.map(project => (
-                  <div key={project.id} className="project-card">
+                  <Link to={`/post/${project.id}`} key={project.id} className="project-card" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                     <div className={`project-image-placeholder ${project.imageBg}`}>
                       <div className="bookmark-btn-floating"><Bookmark size={16} /></div>
                     </div>
@@ -103,8 +103,10 @@ const Projects = () => {
                       </div>
                       <div className="p-footer">
                         <div className="p-author">
-                          <img src={project.author.avatar} alt={project.author.handle} />
-                          <span>{project.author.handle}</span>
+                          <Link to={`/profile/${project.author.handle.replace('@', '')}`} onClick={(e) => e.stopPropagation()} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <img src={project.author.avatar} alt={project.author.handle} />
+                            <span>{project.author.handle}</span>
+                          </Link>
                         </div>
                         <div className="p-stats">
                           <span><Heart size={14} /> {project.stats.likes}</span>
@@ -112,7 +114,7 @@ const Projects = () => {
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))
               )}
             </div>

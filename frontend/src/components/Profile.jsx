@@ -5,7 +5,7 @@ import PostCard from './dashboard/PostCard';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import './Profile.css';
-import { MapPin, Link as LinkIcon, Calendar, UserPlus, MessageSquare, Edit } from 'lucide-react';
+import { MapPin, Link as LinkIcon, Calendar, UserPlus, MessageSquare, Edit, X, Plus, Camera } from 'lucide-react';
 
 const Profile = () => {
   const { username } = useParams();
@@ -19,12 +19,16 @@ const Profile = () => {
   const [editForm, setEditForm] = useState({
     fullName: '',
     bio: '',
-    badge: ''
+    badge: '',
+    avatar: '',
+    skills: []
   });
+  const [newSkill, setNewSkill] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [isMessaging, setIsMessaging] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState('');
 
   const isOwnProfile = !username || username === currentUser?.username;
 
@@ -39,8 +43,11 @@ const Profile = () => {
         setEditForm({
           fullName: data.fullName,
           bio: data.bio,
-          badge: data.badge
+          badge: data.badge,
+          avatar: data.avatar || '',
+          skills: data.skills || []
         });
+        setAvatarPreview(data.avatar || '');
       } catch (err) {
         setError('Failed to load profile. User may not exist.');
         console.error(err);
@@ -70,6 +77,22 @@ const Profile = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleAddSkill = () => {
+    if (newSkill.trim() && !editForm.skills.includes(newSkill.trim())) {
+      setEditForm({ ...editForm, skills: [...editForm.skills, newSkill.trim()] });
+      setNewSkill('');
+    }
+  };
+
+  const handleRemoveSkill = (skill) => {
+    setEditForm({ ...editForm, skills: editForm.skills.filter(s => s !== skill) });
+  };
+
+  const handleAvatarChange = (url) => {
+    setEditForm({ ...editForm, avatar: url });
+    setAvatarPreview(url);
   };
 
   const handleConnect = async () => {
@@ -131,6 +154,8 @@ const Profile = () => {
 
   if (!profile) return null;
 
+  const displayAvatar = editForm.avatar || profile.avatar;
+
   return (
     <div className="dashboard-container">
       <Sidebar activeTab="profile" />
@@ -139,12 +164,16 @@ const Profile = () => {
         <div className="dash-content-row justify-center">
           <main className="dash-main profile-main">
             
-            {/* Profile Header Card */}
             <div className="profile-header-card">
               <div className="profile-banner"></div>
               <div className="profile-info-section">
                 <div className="profile-avatar-wrapper">
-                  <img src={profile.avatar} alt="Avatar" className="profile-avatar-large" />
+                  <img src={isEditing && avatarPreview ? avatarPreview : profile.avatar} alt="Avatar" className="profile-avatar-large" />
+                  {isOwnProfile && isEditing && (
+                    <label className="avatar-change-btn" htmlFor="avatar-url-input">
+                      <Camera size={16} />
+                    </label>
+                  )}
                 </div>
                 
                   <div className="profile-actions-top">
@@ -169,78 +198,95 @@ const Profile = () => {
 
                 <div className="profile-details">
                   {isEditing ? (
-                    <div style={{ padding: '20px', background: '#f9fafb', borderRadius: '8px', marginBottom: '20px' }}>
-                      <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>Full Name</label>
+                    <div className="edit-profile-form">
+                      <div className="form-group-edit">
+                        <label>Profile Picture URL</label>
+                        <div className="avatar-url-row">
+                          <input 
+                            type="url"
+                            id="avatar-url-input"
+                            placeholder="https://example.com/avatar.png"
+                            value={editForm.avatar}
+                            onChange={(e) => handleAvatarChange(e.target.value)}
+                            className="edit-input"
+                          />
+                          {avatarPreview && (
+                            <img src={avatarPreview} alt="Preview" className="avatar-preview-sm" onError={(e) => e.target.style.display = 'none'} />
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="form-group-edit">
+                        <label>Full Name</label>
                         <input 
                           type="text"
                           value={editForm.fullName}
                           onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
-                          style={{ 
-                            width: '100%', 
-                            padding: '8px 12px', 
-                            borderRadius: '6px', 
-                            border: '1px solid #ddd',
-                            color: '#374151',
-                            backgroundColor: '#ffffff'
-                          }}
+                          className="edit-input"
                         />
                       </div>
-                      <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>Badge</label>
+
+                      <div className="form-group-edit">
+                        <label>Badge / Title</label>
                         <input 
                           type="text"
                           value={editForm.badge}
                           onChange={(e) => setEditForm({ ...editForm, badge: e.target.value })}
-                          style={{ 
-                            width: '100%', 
-                            padding: '8px 12px', 
-                            borderRadius: '6px', 
-                            border: '1px solid #ddd',
-                            color: '#374151',
-                            backgroundColor: '#ffffff'
-                          }}
+                          className="edit-input"
+                          placeholder="e.g. Full Stack Developer"
                         />
                       </div>
-                      <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>Bio</label>
+
+                      <div className="form-group-edit">
+                        <label>Bio</label>
                         <textarea 
                           value={editForm.bio}
                           onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
                           rows={3}
-                          style={{ 
-                            width: '100%', 
-                            padding: '8px 12px', 
-                            borderRadius: '6px', 
-                            border: '1px solid #ddd',
-                            color: '#374151',
-                            backgroundColor: '#ffffff',
-                            resize: 'vertical'
-                          }}
+                          className="edit-textarea"
+                          placeholder="Tell us about yourself..."
                         />
                       </div>
-                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+
+                      <div className="form-group-edit">
+                        <label>Skills / Tags</label>
+                        <div className="skills-edit-area">
+                          <div className="skills-chips">
+                            {editForm.skills.map(skill => (
+                              <span key={skill} className="skill-chip">
+                                {skill}
+                                <button className="remove-skill" onClick={() => handleRemoveSkill(skill)}>
+                                  <X size={12} />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                          <div className="add-skill-row">
+                            <input 
+                              type="text"
+                              placeholder="Add a skill (e.g. React, Node.js)"
+                              value={newSkill}
+                              onChange={(e) => setNewSkill(e.target.value)}
+                              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
+                              className="edit-input skill-input"
+                            />
+                            <button className="add-skill-btn" onClick={handleAddSkill}>
+                              <Plus size={14} /> Add
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="edit-actions">
                         <button 
                           onClick={handleSaveProfile}
                           disabled={isSaving}
-                          style={{ 
-                            padding: '8px 16px', 
-                            background: '#3b82f6', 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '6px',
-                            cursor: isSaving ? 'not-allowed' : 'pointer',
-                            opacity: isSaving ? 0.7 : 1
-                          }}
+                          className="save-btn"
                         >
                           {isSaving ? 'Saving...' : 'Save Changes'}
                         </button>
                         {saveMessage && (
-                          <span style={{ 
-                            color: saveMessage.includes('Failed') ? '#ef4444' : '#10b981',
-                            fontSize: '14px',
-                            fontWeight: '500'
-                          }}>
+                          <span className={saveMessage.includes('Failed') ? 'save-error' : 'save-success'}>
                             {saveMessage}
                           </span>
                         )}
@@ -250,34 +296,41 @@ const Profile = () => {
                     <>
                       <div className="profile-name-row">
                         <h1 className="profile-name">{profile.fullName}</h1>
-                        <span className="profile-badge-pill">{profile.badge}</span>
+                        {profile.badge && <span className="profile-badge-pill">{profile.badge}</span>}
                       </div>
                       <span className="profile-handle">@{profile.username}</span>
                       
-                      <p className="profile-bio">{profile.bio}</p>
+                      {profile.bio && <p className="profile-bio">{profile.bio}</p>}
+
+                      {profile.skills && profile.skills.length > 0 && (
+                        <div className="profile-skills">
+                          {profile.skills.map(skill => (
+                            <span key={skill} className="skill-tag">{skill}</span>
+                          ))}
+                        </div>
+                      )}
                       
                       <div className="profile-meta">
                         <span><Calendar size={14} /> {profile.joinedDate}</span>
                         <span><LinkIcon size={14} /> github.com/{profile.username}</span>
                       </div>
+
+                      <div className="profile-stats">
+                        <div className="stat-box">
+                          <span className="stat-num">{profile.connectionsCount}</span>
+                          <span className="stat-label">Connections</span>
+                        </div>
+                        <div className="stat-box">
+                          <span className="stat-num">{profile.projects.length}</span>
+                          <span className="stat-label">Projects</span>
+                        </div>
+                      </div>
                     </>
                   )}
-
-                  <div className="profile-stats">
-                    <div className="stat-box">
-                      <span className="stat-num">{profile.connectionsCount}</span>
-                      <span className="stat-label">Connections</span>
-                    </div>
-                    <div className="stat-box">
-                      <span className="stat-num">{profile.projects.length}</span>
-                      <span className="stat-label">Projects</span>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Profile Tabs */}
             <div className="profile-tabs">
               <button 
                 className={`prof-tab ${activeTab === 'projects' ? 'active' : ''}`}
@@ -293,18 +346,27 @@ const Profile = () => {
               </button>
             </div>
 
-            {/* Profile Content */}
             <div className="profile-content-list">
-              {activeTab === 'projects' && profile.projects.map(project => (
+              {activeTab === 'projects' && profile.projects.length > 0 && profile.projects.map(project => (
                 <div key={project.id} className="profile-project-card">
                   <h4>{project.title}</h4>
                   <p>{project.desc}</p>
                 </div>
               ))}
+              {activeTab === 'projects' && profile.projects.length === 0 && (
+                <div className="empty-state">
+                  <p>No projects yet</p>
+                </div>
+              )}
 
-              {activeTab === 'posts' && profile.posts.map(post => (
+              {activeTab === 'posts' && profile.posts.length > 0 && profile.posts.map(post => (
                 <PostCard key={post.id} post={post} />
               ))}
+              {activeTab === 'posts' && profile.posts.length === 0 && (
+                <div className="empty-state">
+                  <p>No posts yet</p>
+                </div>
+              )}
             </div>
 
           </main>

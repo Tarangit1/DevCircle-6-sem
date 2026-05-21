@@ -107,11 +107,23 @@ const PostCard = ({ post }) => {
     <Link to={`/post/${post.id}`} className="post-card" style={{textDecoration: 'none', color: 'inherit', display: 'block'}}>
       <div className="post-header">
         <div className="post-author">
-          <img src={post.author.avatar} alt={post.author.name} />
+          <Link 
+            to={`/profile/${post.author.handle.replace('@', '')}`} 
+            onClick={(e) => { e.stopPropagation(); }}
+            style={{ textDecoration: 'none' }}
+          >
+            <img src={post.author.avatar} alt={post.author.name} />
+          </Link>
           <div className="author-details">
-            <span className="author-name">
-              {post.author.name} {post.author.verified && <CheckCircle2 size={12} className="verified-icon" />}
-            </span>
+            <Link 
+              to={`/profile/${post.author.handle.replace('@', '')}`} 
+              onClick={(e) => { e.stopPropagation(); }}
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
+              <span className="author-name">
+                {post.author.name} {post.author.verified && <CheckCircle2 size={12} className="verified-icon" />}
+              </span>
+            </Link>
             <span className="author-handle">{post.author.handle} • {post.timeAgo}</span>
           </div>
         </div>

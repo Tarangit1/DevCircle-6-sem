@@ -4,6 +4,31 @@ import Comment from '../models/Comment.js';
 import { transformPost, transformUser } from '../utils/helpers.js';
 import { createNotification } from './notificationController.js';
 
+// @desc    Get all users (for search)
+// @route   GET /api/users
+// @access  Private
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find()
+      .select('fullName username avatar badge bio')
+      .lean();
+
+    const transformedUsers = users.map(user => ({
+      id: user._id,
+      fullName: user.fullName,
+      username: user.username,
+      avatar: user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2))}&background=6366f1&color=ffffff&size=150&bold=true`,
+      badge: user.badge,
+      bio: user.bio
+    }));
+
+    res.json(transformedUsers);
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // @desc    Get user profile by username
 // @route   GET /api/users/:username
 // @access  Public
@@ -51,11 +76,13 @@ export const getUserProfile = async (req, res) => {
     const joinedString = `Joined ${monthNames[joinedDate.getMonth()]} ${joinedDate.getFullYear()}`;
 
     res.json({
+      id: user._id,
       fullName: user.fullName,
       username: user.username,
       avatar: user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2))}&background=6366f1&color=ffffff&size=150&bold=true`,
       badge: user.badge,
       bio: user.bio,
+      skills: user.skills || [],
       verified: user.verified,
       connectionsCount: user.connections.length,
       joinedDate: joinedString,
@@ -76,7 +103,7 @@ export const updateProfile = async (req, res) => {
     console.log('Update profile request body:', req.body);
     console.log('User ID:', req.user._id);
     
-    const { fullName, bio, badge, avatar } = req.body;
+    const { fullName, bio, badge, avatar, skills } = req.body;
 
     const user = await User.findById(req.user._id);
     console.log('Found user:', user ? user.username : 'not found');
@@ -89,6 +116,7 @@ export const updateProfile = async (req, res) => {
     if (bio !== undefined) user.bio = bio;
     if (badge !== undefined) user.badge = badge;
     if (avatar) user.avatar = avatar;
+    if (skills !== undefined) user.skills = Array.isArray(skills) ? skills : [];
 
     console.log('Saving user with updated data:', {
       fullName: user.fullName,
@@ -107,6 +135,7 @@ export const updateProfile = async (req, res) => {
       avatar: user.avatar,
       badge: user.badge,
       bio: user.bio,
+      skills: user.skills,
       verified: user.verified
     };
 

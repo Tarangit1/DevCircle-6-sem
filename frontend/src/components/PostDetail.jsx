@@ -4,7 +4,8 @@ import Sidebar from './dashboard/Sidebar';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import './PostDetail.css';
-import { Heart, MessageSquare, Share2, Bookmark, CheckCircle2, Award, ChevronLeft } from 'lucide-react';
+import { Heart, MessageSquare, Share2, Bookmark, CheckCircle2, Award, ChevronLeft, Edit2, Trash2, X, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const PostDetail = () => {
   const { id } = useParams();
@@ -21,6 +22,14 @@ const PostDetail = () => {
   const [likesCount, setLikesCount] = useState(0);
   const [bookmarked, setBookmarked] = useState(false);
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ title: '', desc: '', tags: [], badge: '', bountyAmount: '', thumbnail: '' });
+  const [newTag, setNewTag] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const isOwner = currentUser?.username === post?.author?.handle?.replace('@', '');
+
   useEffect(() => {
     const fetchPost = async () => {
       try {
@@ -29,6 +38,14 @@ const PostDetail = () => {
         const data = await api.getPostDetail(id);
         setPost(data);
         setLikesCount(data.stats.likes);
+        setEditForm({
+          title: data.title,
+          desc: data.desc,
+          tags: data.tags || [],
+          badge: data.badge || '',
+          bountyAmount: data.bountyAmount || '',
+          thumbnail: data.thumbnail || ''
+        });
       } catch (err) {
         setError('Failed to load post. It may have been deleted or does not exist.');
         console.error(err);
@@ -56,9 +73,7 @@ const PostDetail = () => {
         parentCommentId: replyingTo
       });
       
-      // Add comment to local state
       if (replyingTo) {
-        // Add as reply
         setPost(prev => ({
           ...prev,
           comments: prev.comments.map(c => 
@@ -68,7 +83,6 @@ const PostDetail = () => {
           )
         }));
       } else {
-        // Add as top-level comment
         setPost(prev => ({
           ...prev,
           comments: [newComment, ...prev.comments],
@@ -126,7 +140,6 @@ const PostDetail = () => {
     try {
       await api.markCommentAsWinner(id, commentId);
       
-      // Update comment in local state
       setPost(prev => ({
         ...prev,
         comments: prev.comments.map(c => 
@@ -137,6 +150,50 @@ const PostDetail = () => {
       console.error('Failed to mark winner:', error);
       alert(error.response?.data?.message || 'Failed to mark winner');
     }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editForm.title.trim() || !editForm.desc.trim()) {
+      alert('Title and description are required');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const updated = await api.updatePost(id, editForm);
+      setPost({ ...post, ...updated });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update post:', error);
+      alert(error.response?.data?.message || 'Failed to update post');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this post? This cannot be undone.')) return;
+
+    try {
+      setIsDeleting(true);
+      await api.deletePost(id);
+      navigate('/home');
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      alert(error.response?.data?.message || 'Failed to delete post');
+      setIsDeleting(false);
+    }
+  };
+
+  const handleAddTag = () => {
+    if (newTag.trim() && !editForm.tags.includes(newTag.trim())) {
+      setEditForm({ ...editForm, tags: [...editForm.tags, newTag.trim()] });
+      setNewTag('');
+    }
+  };
+
+  const handleRemoveTag = (tag) => {
+    setEditForm({ ...editForm, tags: editForm.tags.filter(t => t !== tag) });
   };
 
   if (isLoading) {
@@ -173,19 +230,145 @@ const PostDetail = () => {
       <div className="dash-content-area post-detail-area">
         <div className="dash-content-row justify-center">
           <main className="dash-main post-detail-main">
-            <button className="back-btn" onClick={() => navigate(-1)}>
-              <ChevronLeft size={16} /> Back
-            </button>
+            <div className="pd-top-bar">
+              <button className="back-btn" onClick={() => navigate(-1)}>
+                <ChevronLeft size={16} /> Back
+              </button>
+              {isOwner && (
+                <div className="pd-owner-actions">
+                  <button className="pd-edit-btn" onClick={() => setIsEditing(true)}>
+                    <Edit2 size={14} /> Edit
+                  </button>
+                  <button className="pd-delete-btn" onClick={handleDelete} disabled={isDeleting}>
+                    <Trash2 size={14} /> {isDeleting ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isEditing && (
+              <div className="pd-edit-modal">
+                <div className="pd-edit-content">
+                  <div className="pd-edit-header">
+                    <h3>Edit {post.badge === 'Bounty' ? 'Bounty' : 'Post'}</h3>
+                    <button className="pd-edit-close" onClick={() => setIsEditing(false)}>
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <div className="pd-edit-form">
+                    <div className="edit-field">
+                      <label>Title</label>
+                      <input 
+                        type="text" 
+                        value={editForm.title}
+                        onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                        className="edit-input"
+                        maxLength={100}
+                      />
+                    </div>
+
+                    <div className="edit-field">
+                      <label>Description</label>
+                      <textarea 
+                        value={editForm.desc}
+                        onChange={(e) => setEditForm({ ...editForm, desc: e.target.value })}
+                        className="edit-textarea"
+                        rows={4}
+                        maxLength={500}
+                      />
+                    </div>
+
+                    <div className="edit-field">
+                      <label>Badge</label>
+                      <select 
+                        value={editForm.badge}
+                        onChange={(e) => setEditForm({ ...editForm, badge: e.target.value })}
+                        className="edit-select"
+                      >
+                        <option value="">None</option>
+                        <option value="Building">Building</option>
+                        <option value="Discussion">Discussion</option>
+                        <option value="Bounty">Bounty</option>
+                        <option value="Help">Help</option>
+                      </select>
+                    </div>
+
+                    {editForm.badge === 'Bounty' && (
+                      <div className="edit-field">
+                        <label>Bounty Amount</label>
+                        <input 
+                          type="text" 
+                          value={editForm.bountyAmount}
+                          onChange={(e) => setEditForm({ ...editForm, bountyAmount: e.target.value })}
+                          className="edit-input"
+                          placeholder="e.g. $100"
+                        />
+                      </div>
+                    )}
+
+                    <div className="edit-field">
+                      <label>Thumbnail URL</label>
+                      <input 
+                        type="url" 
+                        value={editForm.thumbnail}
+                        onChange={(e) => setEditForm({ ...editForm, thumbnail: e.target.value })}
+                        className="edit-input"
+                        placeholder="https://example.com/image.png"
+                      />
+                    </div>
+
+                    <div className="edit-field">
+                      <label>Tags</label>
+                      <div className="edit-tags">
+                        {editForm.tags.map(tag => (
+                          <span key={tag} className="edit-tag-chip">
+                            {tag}
+                            <button onClick={() => handleRemoveTag(tag)}><X size={12} /></button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="edit-tag-add">
+                        <input 
+                          type="text" 
+                          value={newTag}
+                          onChange={(e) => setNewTag(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                          className="edit-input"
+                          placeholder="Add a tag..."
+                        />
+                        <button onClick={handleAddTag} className="edit-tag-btn">
+                          <Plus size={14} /> Add
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="edit-actions-row">
+                      <button className="edit-cancel-btn" onClick={() => setIsEditing(false)}>
+                        Cancel
+                      </button>
+                      <button className="edit-save-btn" onClick={handleSaveEdit} disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Main Post Card */}
             <div className="pd-card">
               <div className="pd-header">
-                <img src={post.author.avatar} alt="Avatar" className="pd-avatar" />
+                <Link to={`/profile/${post.author.handle.replace('@', '')}`} style={{ textDecoration: 'none' }}>
+                  <img src={post.author.avatar} alt="Avatar" className="pd-avatar" />
+                </Link>
                 <div className="pd-author-info">
-                  <h4>
-                    {post.author.name}
-                    {post.author.verified && <CheckCircle2 size={14} className="verified-icon text-blue-500 ml-1" />}
-                  </h4>
+                  <Link to={`/profile/${post.author.handle.replace('@', '')}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <h4>
+                      {post.author.name}
+                      {post.author.verified && <CheckCircle2 size={14} className="verified-icon text-blue-500 ml-1" />}
+                    </h4>
+                  </Link>
                   <span className="text-xs text-gray-400">{post.author.handle} • {post.timeAgo}</span>
                 </div>
                 {post.badge && <span className="pd-badge">{post.badge}</span>}
@@ -200,7 +383,15 @@ const PostDetail = () => {
                 </div>
               )}
 
-              {post.mockImage && (
+              {post.bountyAmount && <div className="pd-bounty-amount">{post.bountyAmount}</div>}
+
+              {post.thumbnail && (
+                <div className="pd-image-placeholder">
+                  <img src={post.thumbnail} alt="Thumbnail" style={{ width: '100%', borderRadius: '8px', objectFit: 'cover' }} onError={(e) => e.target.style.display = 'none'} />
+                </div>
+              )}
+
+              {post.mockImage && !post.thumbnail && (
                 <div className="pd-image-placeholder">
                   {post.mockImage} Thumbnail
                 </div>
@@ -231,7 +422,9 @@ const PostDetail = () => {
               <h3>Comments ({post.stats.comments})</h3>
               
               <div className="pd-comment-input-box">
-                <img src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} alt="Me" className="pd-avatar" />
+                <Link to="/profile" style={{ textDecoration: 'none' }}>
+                  <img src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} alt="Me" className="pd-avatar" />
+                </Link>
                 <input 
                   type="text" 
                   placeholder="Add a comment or suggest a solution..." 
@@ -259,14 +452,17 @@ const PostDetail = () => {
                     )}
 
                     <div className="pd-comment">
-                      <img src={comment.author.avatar} alt="Avatar" className="pd-avatar-sm" />
+                      <Link to={`/profile/${comment.author.handle.replace('@', '')}`} style={{ textDecoration: 'none' }}>
+                        <img src={comment.author.avatar} alt="Avatar" className="pd-avatar-sm" />
+                      </Link>
                       <div className="pd-comment-body">
                         <div className="pd-comment-header">
-                          <span className="pd-c-name">{comment.author.name}</span>
+                          <Link to={`/profile/${comment.author.handle.replace('@', '')}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                            <span className="pd-c-name">{comment.author.name}</span>
+                          </Link>
                           <span className="pd-c-handle">{comment.author.handle}</span>
                           <span className="pd-c-time">• {comment.timeAgo}</span>
                           
-                          {/* Only show this if the logged in user is the post creator and it's a bounty */}
                           {!comment.isWinner && post.badge === 'Bounty' && currentUser && 
                            currentUser.username === post.author.handle.replace('@', '') && (
                             <button 
@@ -285,15 +481,18 @@ const PostDetail = () => {
                       </div>
                     </div>
 
-                    {/* Nested Replies */}
                     {comment.replies && comment.replies.length > 0 && (
                       <div className="pd-replies">
                         {comment.replies.map(reply => (
                           <div key={reply.id} className="pd-comment">
-                            <img src={reply.author.avatar} alt="Avatar" className="pd-avatar-sm" />
+                            <Link to={`/profile/${reply.author.handle.replace('@', '')}`} style={{ textDecoration: 'none' }}>
+                              <img src={reply.author.avatar} alt="Avatar" className="pd-avatar-sm" />
+                            </Link>
                             <div className="pd-comment-body">
                               <div className="pd-comment-header">
-                                <span className="pd-c-name">{reply.author.name}</span>
+                                <Link to={`/profile/${reply.author.handle.replace('@', '')}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                  <span className="pd-c-name">{reply.author.name}</span>
+                                </Link>
                                 <span className="pd-c-handle">{reply.author.handle}</span>
                                 <span className="pd-c-time">• {reply.timeAgo}</span>
                               </div>
