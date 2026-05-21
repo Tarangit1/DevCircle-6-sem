@@ -6,14 +6,15 @@ import { useAuth } from '../../context/AuthContext';
 
 const PostCard = ({ post }) => {
   const navigate = useNavigate();
-  const { isAuthenticated, currentUser } = useAuth();
+  const { isAuthenticated, currentUser, updateUser } = useAuth();
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.stats.likes);
   const [bookmarked, setBookmarked] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
-  const [connected, setConnected] = useState(false);
+  
   const [isConnecting, setIsConnecting] = useState(false);
+  const isConnected = currentUser?.connections?.includes(post.author.id);
 
   const isOwnPost = currentUser?.username === post.author.handle.replace('@', '');
 
@@ -31,7 +32,9 @@ const PostCard = ({ post }) => {
     try {
       setIsConnecting(true);
       const result = await api.connectWithUser(post.author.id);
-      setConnected(result.connected);
+      if (result.connected) {
+  updateUser({ connections: [...(currentUser?.connections || []), post.author.id] });
+}
     } catch (error) {
       console.error('Failed to connect:', error);
       if (error.response?.status === 401) {
@@ -128,11 +131,11 @@ const PostCard = ({ post }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {!isOwnPost && (
             <button 
-              className={`connect-btn ${connected ? 'connected' : ''}`}
+              className={`connect-btn ${isConnected ? 'connected' : ''}`}
               onClick={handleConnect}
               disabled={isConnecting}
             >
-              {connected ? (
+              {isConnected ? (
                 <>
                   <UserCheck size={16} />
                   Connected
