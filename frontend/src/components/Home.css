@@ -330,6 +330,22 @@
   transition: background-color 0.2s;
 }
 
+.logout-btn {
+  margin-top: 0.5rem;
+  background: #3b5cff;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.logout-btn:hover {
+  background: #2b4cff;
+}
+
 .user-profile-pill:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
@@ -617,6 +633,14 @@
 
 .post-image-preview {
   flex: 1;
+}
+
+.post-image {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .mock-image {

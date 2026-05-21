@@ -89,7 +89,8 @@ const Projects = () => {
                 projects.map(project => (
                   <Link to={`/post/${project.id}`} key={project.id} className="project-card" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                     <div className={`project-image-placeholder ${project.imageBg}`}>
-                      <div className="bookmark-btn-floating"><Bookmark size={16} /></div>
+                      {project.thumbnail && <img src={project.thumbnail} alt={project.title} className="project-image" />}
+<div className="bookmark-btn-floating"><Bookmark size={16} /></div>
                     </div>
                     <div className="project-card-content">
                       <h3 className="p-title">
@@ -102,12 +103,15 @@ const Projects = () => {
                         ))}
                       </div>
                       <div className="p-footer">
-                        <div className="p-author">
-                          <Link to={`/profile/${project.author.handle.replace('@', '')}`} onClick={(e) => e.stopPropagation()} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <img src={project.author.avatar} alt={project.author.handle} />
-                            <span>{project.author.handle}</span>
-                          </Link>
-                        </div>
+<div className="p-author">
+  <span
+    onClick={(e) => { e.stopPropagation(); navigate(`/profile/${project.author.handle.replace('@', '')}`); }}
+    style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+  >
+    <img src={project.author.avatar} alt={project.author.handle} />
+    <span>{project.author.handle}</span>
+  </span>
+</div>
                         <div className="p-stats">
                           <span><Heart size={14} /> {project.stats.likes}</span>
                           <span><MessageSquare size={14} /> {project.stats.comments}</span>
@@ -174,7 +178,7 @@ const Projects = () => {
           <div className="widget-card">
             <div className="widget-header">
               <h3>Top Projects This Week</h3>
-              <a href="#" className="widget-link text-xs">View Leaderboard <ArrowRight size={12} /></a>
+              <Link to="/leaderboard" className="widget-link text-xs">View Leaderboard <ArrowRight size={12} /></Link>
             </div>
             <div className="widget-list">
               {isLoading ? (

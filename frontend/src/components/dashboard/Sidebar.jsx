@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   Home as HomeIcon, Briefcase, Bug, Trophy, 
@@ -7,7 +7,12 @@ import {
 } from 'lucide-react';
 
 const Sidebar = ({ activeTab = 'home' }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <aside className="dash-sidebar">
@@ -57,19 +62,22 @@ const Sidebar = ({ activeTab = 'home' }) => {
           <p>DevCircle is where developers showcase their work and build meaningful connections.</p>
         </div>
 
-        <Link to="/profile" className="user-profile-pill" style={{ textDecoration: 'none', color: 'inherit', display: 'flex' }}>
-          <img 
-            src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
-            alt="User" 
-          />
-          <div className="user-info">
-            <span className="user-name">{currentUser?.fullName || 'Guest User'}</span>
-            <span className="user-handle">
-              <div className="status-dot"></div> {currentUser?.badge || 'Developer'}
-            </span>
-          </div>
-          <div className="more-dots">...</div>
-        </Link>
+         <Link to="/profile" className="user-profile-pill" style={{ textDecoration: 'none', color: 'inherit', display: 'flex' }}>
+           <img 
+             src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
+             alt="User" 
+           />
+           <div className="user-info">
+             <span className="user-name">{currentUser?.fullName || 'Guest User'}</span>
+             <span className="user-handle">
+               <div className="status-dot"></div> {currentUser?.badge || 'Developer'}
+             </span>
+           </div>
+           <div className="more-dots">...</div>
+         </Link>
+         {currentUser && (
+           <button className="logout-btn" onClick={handleLogout}>Logout</button>
+         )}
       </div>
     </aside>
   );

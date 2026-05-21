@@ -106,27 +106,25 @@ const PostCard = ({ post }) => {
   return (
     <Link to={`/post/${post.id}`} className="post-card" style={{textDecoration: 'none', color: 'inherit', display: 'block'}}>
       <div className="post-header">
-        <div className="post-author">
-          <Link 
-            to={`/profile/${post.author.handle.replace('@', '')}`} 
-            onClick={(e) => { e.stopPropagation(); }}
-            style={{ textDecoration: 'none' }}
-          >
-            <img src={post.author.avatar} alt={post.author.name} />
-          </Link>
-          <div className="author-details">
-            <Link 
-              to={`/profile/${post.author.handle.replace('@', '')}`} 
-              onClick={(e) => { e.stopPropagation(); }}
-              style={{ textDecoration: 'none', color: 'inherit' }}
-            >
-              <span className="author-name">
-                {post.author.name} {post.author.verified && <CheckCircle2 size={12} className="verified-icon" />}
-              </span>
-            </Link>
-            <span className="author-handle">{post.author.handle} • {post.timeAgo}</span>
-          </div>
-        </div>
+<div className="post-author">
+  <span
+    onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.author.handle.replace('@', '')}`); }}
+    style={{ cursor: 'pointer' }}
+  >
+    <img src={post.author.avatar} alt={post.author.name} />
+  </span>
+  <div className="author-details">
+    <span
+      onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.author.handle.replace('@', '')}`); }}
+      style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+    >
+      <span className="author-name">
+        {post.author.name} {post.author.verified && <CheckCircle2 size={12} className="verified-icon" />}
+      </span>
+    </span>
+    <span className="author-handle">{post.author.handle} • {post.timeAgo}</span>
+  </div>
+</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {!isOwnPost && (
             <button 
@@ -149,9 +147,15 @@ const PostCard = ({ post }) => {
           )}
           <span className={`post-badge ${getBadgeClass(post.badge)}`}>{post.badge}</span>
         </div>
-      </div>
-      
-      {post.bountyAmount ? (
+        </div>
+        
+        {post.thumbnail && (
+          <div className="post-image-wrapper">
+            <img src={post.thumbnail} alt={post.title} className="post-image" />
+          </div>
+        )}
+        
+        {post.bountyAmount ? (
         <div className="flex justify-between items-start">
           <div>
             <h3 className="post-title">{post.title}</h3>

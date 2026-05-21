@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import './App.css';
 import Navbar from './components/Navbar';
@@ -18,6 +19,13 @@ import { useAuth } from './context/AuthContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  useEffect(() => {
+    if (currentUser) {
+      navigate('/home');
+    }
+  }, [currentUser, navigate]);
+
   return (
     <>
       <div className="dark-section">

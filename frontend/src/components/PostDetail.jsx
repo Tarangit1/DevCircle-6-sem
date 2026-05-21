@@ -359,16 +359,22 @@ const PostDetail = () => {
             {/* Main Post Card */}
             <div className="pd-card">
               <div className="pd-header">
-                <Link to={`/profile/${post.author.handle.replace('@', '')}`} style={{ textDecoration: 'none' }}>
-                  <img src={post.author.avatar} alt="Avatar" className="pd-avatar" />
-                </Link>
+                 <span
+                   onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.author.handle.replace('@', '')}`); }}
+                   style={{ cursor: 'pointer' }}
+                 >
+                   <img src={post.author.avatar} alt="Avatar" className="pd-avatar" />
+                 </span>
                 <div className="pd-author-info">
-                  <Link to={`/profile/${post.author.handle.replace('@', '')}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <span
+                    onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.author.handle.replace('@', '')}`); }}
+                    style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+                  >
                     <h4>
                       {post.author.name}
                       {post.author.verified && <CheckCircle2 size={14} className="verified-icon text-blue-500 ml-1" />}
                     </h4>
-                  </Link>
+                  </span>
                   <span className="text-xs text-gray-400">{post.author.handle} • {post.timeAgo}</span>
                 </div>
                 {post.badge && <span className="pd-badge">{post.badge}</span>}
@@ -452,14 +458,20 @@ const PostDetail = () => {
                     )}
 
                     <div className="pd-comment">
-                      <Link to={`/profile/${comment.author.handle.replace('@', '')}`} style={{ textDecoration: 'none' }}>
-                        <img src={comment.author.avatar} alt="Avatar" className="pd-avatar-sm" />
-                      </Link>
+                       <span
+                         onClick={(e) => { e.stopPropagation(); navigate(`/profile/${comment.author.handle.replace('@', '')}`); }}
+                         style={{ cursor: 'pointer' }}
+                       >
+                         <img src={comment.author.avatar} alt="Avatar" className="pd-avatar-sm" />
+                       </span>
                       <div className="pd-comment-body">
                         <div className="pd-comment-header">
-                          <Link to={`/profile/${comment.author.handle.replace('@', '')}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                            <span className="pd-c-name">{comment.author.name}</span>
-                          </Link>
+                         <span
+                           onClick={(e) => { e.stopPropagation(); navigate(`/profile/${comment.author.handle.replace('@', '')}`); }}
+                           style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+                         >
+                           <span className="pd-c-name">{comment.author.name}</span>
+                         </span>
                           <span className="pd-c-handle">{comment.author.handle}</span>
                           <span className="pd-c-time">• {comment.timeAgo}</span>
                           
@@ -485,14 +497,20 @@ const PostDetail = () => {
                       <div className="pd-replies">
                         {comment.replies.map(reply => (
                           <div key={reply.id} className="pd-comment">
-                            <Link to={`/profile/${reply.author.handle.replace('@', '')}`} style={{ textDecoration: 'none' }}>
-                              <img src={reply.author.avatar} alt="Avatar" className="pd-avatar-sm" />
-                            </Link>
+                             <span
+                               onClick={(e) => { e.stopPropagation(); navigate(`/profile/${reply.author.handle.replace('@', '')}`); }}
+                               style={{ cursor: 'pointer' }}
+                             >
+                               <img src={reply.author.avatar} alt="Avatar" className="pd-avatar-sm" />
+                             </span>
                             <div className="pd-comment-body">
                               <div className="pd-comment-header">
-                                <Link to={`/profile/${reply.author.handle.replace('@', '')}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                  <span className="pd-c-name">{reply.author.name}</span>
-                                </Link>
+                                 <span
+                                   onClick={(e) => { e.stopPropagation(); navigate(`/profile/${reply.author.handle.replace('@', '')}`); }}
+                                   style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+                                 >
+                                   <span className="pd-c-name">{reply.author.name}</span>
+                                 </span>
                                 <span className="pd-c-handle">{reply.author.handle}</span>
                                 <span className="pd-c-time">• {reply.timeAgo}</span>
                               </div>
