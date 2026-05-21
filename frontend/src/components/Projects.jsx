@@ -11,17 +11,16 @@ const Projects = () => {
   const [projects, setProjects] = useState([]);
   const [topWeek, setTopWeek] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         setIsLoading(true);
-        // Note: topProjectsThisWeek isn't in api yet, so we could just grab it from projects or add it to API.
-        // For now, I'll update the API call to getProjects which returns mockProjects
+        setError(null);
         const data = await api.getProjects();
         setProjects(data);
         
-        // We'll simulate top week from data for now
         setTopWeek(data.slice(0, 5).map((p, i) => ({
           id: p.id,
           rank: i + 1,
@@ -30,6 +29,7 @@ const Projects = () => {
           color: i === 0 ? 'text-yellow-500' : 'text-gray-400'
         })));
       } catch (error) {
+        setError('Failed to load projects. Please try again.');
         console.error("Failed to load projects", error);
       } finally {
         setIsLoading(false);
@@ -76,6 +76,15 @@ const Projects = () => {
             <div className="projects-grid">
               {isLoading ? (
                 <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#666' }}>Loading projects...</div>
+              ) : error ? (
+                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem' }}>
+                  <p style={{ color: '#ef4444' }}>{error}</p>
+                  <button onClick={() => window.location.reload()} className="btn-retry" style={{ marginTop: '1rem' }}>Retry</button>
+                </div>
+              ) : projects.length === 0 ? (
+                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#666' }}>
+                  No projects found. <button onClick={() => navigate('/projects/new')} style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Create one!</button>
+                </div>
               ) : (
                 projects.map(project => (
                   <div key={project.id} className="project-card">

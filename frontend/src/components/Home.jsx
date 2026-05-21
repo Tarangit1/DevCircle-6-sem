@@ -13,13 +13,16 @@ const Home = () => {
   const [posts, setPosts] = useState([]);
   const [widgetData, setWidgetData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [postContent, setPostContent] = useState('');
   const [isPosting, setIsPosting] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('For You');
   
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         const [postsData, wData] = await Promise.all([
           api.getFeedPosts(),
           api.getWidgetData()
@@ -27,6 +30,7 @@ const Home = () => {
         setPosts(postsData);
         setWidgetData(wData);
       } catch (error) {
+        setError('Failed to load feed. Please check your connection and try again.');
         console.error("Failed to load home data", error);
       } finally {
         setIsLoading(false);
@@ -44,21 +48,53 @@ const Home = () => {
     try {
       setIsPosting(true);
       const newPost = await api.createPost({
-        content: postContent,
-        type: 'discussion'
+        title: postContent.trim().substring(0, 60),
+        desc: postContent.trim(),
+        tags: [],
+        badge: 'Discussion'
       });
       
-      // Add the new post to the top of the feed
       setPosts([newPost, ...posts]);
       setPostContent('');
       
     } catch (error) {
       console.error("Failed to create post", error);
-      alert('Failed to create post. Please try again.');
+      alert(error.response?.data?.message || 'Failed to create post. Please try again.');
     } finally {
       setIsPosting(false);
     }
   };
+
+  const getFilteredPosts = () => {
+    switch (activeFilter) {
+      case 'Following':
+        return posts.filter(p => currentUser?.connections?.includes(p.author.id));
+      case 'Trending':
+        return [...posts].sort((a, b) => b.stats.likes - a.stats.likes);
+      case 'Latest':
+        return [...posts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      default:
+        return posts;
+    }
+  };
+
+  const filteredPosts = getFilteredPosts();
+
+  if (error && isLoading) {
+    return (
+      <div className="dashboard-container">
+        <Sidebar activeTab="home" />
+        <div className="dash-content-area">
+          <div className="error-state">
+            <p>{error}</p>
+            <button onClick={() => window.location.reload()} className="btn-retry">
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">
@@ -67,9 +103,7 @@ const Home = () => {
       <div className="dash-content-area">
         <div className="dash-content-row">
           <main className="dash-main">
-          {/* Gradient Hero Band */}
           <div className="dash-page-hero">
-            {/* Create Post Box */}
             <div className="create-post-box">
               <img 
                 src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
@@ -96,13 +130,17 @@ const Home = () => {
               </button>
             </div>
 
-            {/* Feed Filters */}
             <div className="feed-filters-container">
               <div className="feed-filters">
-                <button className="filter-pill active">For You</button>
-                <button className="filter-pill">Following</button>
-                <button className="filter-pill">Trending</button>
-                <button className="filter-pill">Latest</button>
+                {['For You', 'Following', 'Trending', 'Latest'].map(filter => (
+                  <button 
+                    key={filter}
+                    className={`filter-pill ${activeFilter === filter ? 'active' : ''}`}
+                    onClick={() => setActiveFilter(filter)}
+                  >
+                    {filter}
+                  </button>
+                ))}
               </div>
               <button className="filter-icon-btn">
                 Filter <Filter size={16} />
@@ -110,12 +148,22 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Posts List */}
           <div className="posts-list">
             {isLoading ? (
               <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>Loading feed...</div>
+            ) : error ? (
+              <div className="error-state">
+                <p>{error}</p>
+                <button onClick={() => window.location.reload()} className="btn-retry">
+                  Retry
+                </button>
+              </div>
+            ) : filteredPosts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                {activeFilter === 'Following' ? 'No posts from connections yet. Start connecting!' : 'No posts found'}
+              </div>
             ) : (
-              posts.map(post => (
+              filteredPosts.map(post => (
                 <PostCard key={post.id} post={post} />
               ))
             )}

@@ -19,6 +19,20 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle responses globally
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/signup' && window.location.pathname !== '/') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const api = {
   // Feed & Home
   getFeedPosts: async () => {

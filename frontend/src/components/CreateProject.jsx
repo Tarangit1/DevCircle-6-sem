@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, ChevronDown, X, Image as ImageIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Check, X, Image as ImageIcon } from 'lucide-react';
 import Sidebar from './dashboard/Sidebar';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -8,14 +8,21 @@ import './CreateProject.css';
 
 const CreateProject = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAuthenticated } = useAuth();
+  const isBountyMode = searchParams.get('mode') === 'bounty';
+  
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [activeCategory, setActiveCategory] = useState('Web');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [techStack, setTechStack] = useState(['Next.js', 'TypeScript', 'Tailwind CSS', 'Prisma']);
+  const [newTech, setNewTech] = useState('');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [bountyAmount, setBountyAmount] = useState('');
+  const [badge, setBadge] = useState(isBountyMode ? 'Bounty' : 'Building');
 
-  // Map display labels to backend enum values
   const categories = [
     { label: 'Web Development', value: 'Web' },
     { label: 'Mobile App', value: 'Mobile' },
@@ -24,7 +31,17 @@ const CreateProject = () => {
     { label: 'AI / ML', value: 'AI/ML' },
     { label: 'Other', value: 'Other' }
   ];
-  const [techStack, setTechStack] = useState(['Next.js', 'TypeScript', 'Tailwind CSS', 'Prisma']);
+
+  const handleAddTech = () => {
+    if (newTech.trim() && !techStack.includes(newTech.trim())) {
+      setTechStack([...techStack, newTech.trim()]);
+      setNewTech('');
+    }
+  };
+
+  const handleRemoveTech = (tech) => {
+    setTechStack(techStack.filter(t => t !== tech));
+  };
 
   const handleSubmit = async () => {
     if (!isAuthenticated) {
@@ -46,14 +63,20 @@ const CreateProject = () => {
 
     try {
       setIsSubmitting(true);
-      const newPost = await api.createPost({
+      const postData = {
         title: title.trim(),
         desc: desc.trim(),
         tags: techStack,
-        badge: 'Building',
-        category: activeCategory
-      });
-      
+        badge: badge,
+        category: activeCategory,
+        thumbnail: thumbnailUrl || ''
+      };
+
+      if (isBountyMode && bountyAmount) {
+        postData.bountyAmount = bountyAmount;
+      }
+
+      const newPost = await api.createPost(postData);
       navigate(`/post/${newPost.id}`);
     } catch (error) {
       console.error('Failed to create project:', error);
@@ -71,10 +94,9 @@ const CreateProject = () => {
         <div className="dash-content-row create-project-row">
           <main className="dash-main create-project-main">
             
-            {/* Top Bar Navigation */}
             <div className="create-project-topbar">
-              <button className="btn-back" onClick={() => navigate('/projects')}>
-                <ArrowLeft size={16} /> Back to Projects
+              <button className="btn-back" onClick={() => navigate(isBountyMode ? '/bounties' : '/projects')}>
+                <ArrowLeft size={16} /> Back to {isBountyMode ? 'Bounties' : 'Projects'}
               </button>
               <button 
                 className="btn-post-project"
@@ -85,10 +107,9 @@ const CreateProject = () => {
               </button>
             </div>
 
-            {/* Header */}
             <div className="dash-page-hero create-project-hero">
-              <h1 className="projects-page-title">Create New Project</h1>
-              <p className="projects-page-subtitle">Showcase your work to the developer community.</p>
+              <h1 className="projects-page-title">{isBountyMode ? 'Create New Bounty' : 'Create New Project'}</h1>
+              <p className="projects-page-subtitle">{isBountyMode ? 'Post a challenge and reward solutions.' : 'Showcase your work to the developer community.'}</p>
               {error && (
                 <div style={{ 
                   padding: '12px', 
@@ -104,11 +125,9 @@ const CreateProject = () => {
               )}
             </div>
 
-            {/* Form Container */}
             <div className="project-form-container">
               <h2 className="form-section-title">Project Info</h2>
 
-              {/* Title */}
               <div className="form-group">
                 <label>Project Title <span className="required">*</span></label>
                 <div className="input-wrapper">
@@ -123,7 +142,6 @@ const CreateProject = () => {
                 </div>
               </div>
 
-              {/* Description */}
               <div className="form-group">
                 <label>Short Description <span className="required">*</span></label>
                 <div className="input-wrapper">
@@ -138,7 +156,21 @@ const CreateProject = () => {
                 </div>
               </div>
 
-              {/* Category */}
+              {isBountyMode && (
+                <div className="form-group">
+                  <label>Bounty Amount <span className="required">*</span></label>
+                  <div className="input-wrapper">
+                    <input 
+                      type="text" 
+                      placeholder="e.g. $100, ₹5000" 
+                      value={bountyAmount}
+                      onChange={(e) => setBountyAmount(e.target.value)}
+                      maxLength={50}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="form-group">
                 <label>Category / Tag <span className="required">*</span></label>
                 <p className="form-helper">Choose the most relevant tag</p>
@@ -155,32 +187,45 @@ const CreateProject = () => {
                 </div>
               </div>
 
-              {/* Tech Stack */}
               <div className="form-group">
                 <label>Tech Stack <span className="required">*</span></label>
                 <p className="form-helper">Select the technologies used in your project</p>
-                <div className="tech-select-wrapper">
-                  <input type="text" placeholder="Select or search technologies" className="tech-search-input" />
-                  <ChevronDown size={16} className="tech-dropdown-icon" />
-                </div>
                 <div className="selected-tech-chips">
                   {techStack.map(tech => (
                     <span key={tech} className="tech-chip">
-                      {tech} <button className="remove-tech"><X size={12} /></button>
+                      {tech} <button className="remove-tech" onClick={() => handleRemoveTech(tech)}><X size={12} /></button>
                     </span>
                   ))}
-                  <button className="add-more-btn">+ Add more</button>
+                </div>
+                <div className="add-tech-row">
+                  <input 
+                    type="text" 
+                    placeholder="Add technology..." 
+                    value={newTech}
+                    onChange={(e) => setNewTech(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddTech()}
+                    className="tech-search-input"
+                  />
+                  <button className="add-more-btn" onClick={handleAddTech}>+ Add</button>
                 </div>
               </div>
 
-              {/* Thumbnail */}
               <div className="form-group">
-                <label>Project Thumbnail <span className="required">*</span></label>
-                <p className="form-helper">Upload a cover image for your project</p>
-                <div className="upload-dropzone">
-                  <ImageIcon size={32} className="upload-icon" />
-                  <p>Drag & drop image here or click to browse</p>
+                <label>Project Thumbnail URL</label>
+                <p className="form-helper">Paste an image URL for your project cover (optional)</p>
+                <div className="input-wrapper">
+                  <input 
+                    type="url" 
+                    placeholder="https://example.com/image.png" 
+                    value={thumbnailUrl}
+                    onChange={(e) => setThumbnailUrl(e.target.value)}
+                  />
                 </div>
+                {thumbnailUrl && (
+                  <div className="thumbnail-preview">
+                    <img src={thumbnailUrl} alt="Preview" onError={(e) => e.target.style.display = 'none'} />
+                  </div>
+                )}
               </div>
 
             </div>

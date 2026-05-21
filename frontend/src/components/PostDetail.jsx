@@ -12,6 +12,7 @@ const PostDetail = () => {
   const { currentUser, isAuthenticated } = useAuth();
   const [post, setPost] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [commentInput, setCommentInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
@@ -24,10 +25,12 @@ const PostDetail = () => {
     const fetchPost = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         const data = await api.getPostDetail(id);
         setPost(data);
         setLikesCount(data.stats.likes);
       } catch (err) {
+        setError('Failed to load post. It may have been deleted or does not exist.');
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -142,6 +145,20 @@ const PostDetail = () => {
         <Sidebar />
         <div className="dash-content-area flex items-center justify-center text-gray-500">
           Loading post details...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-container">
+        <Sidebar />
+        <div className="dash-content-area">
+          <div className="error-state">
+            <p>{error}</p>
+            <button onClick={() => navigate(-1)} className="btn-retry">Go Back</button>
+          </div>
         </div>
       </div>
     );

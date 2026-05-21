@@ -41,16 +41,14 @@ const Sidebar = ({ activeTab = 'home' }) => {
             <span className="nav-badge">{currentUser.unreadMessages}</span>
           )}
         </Link>
-        <a href="#" className="nav-item has-badge">
+        <Link to="/notifications" className={`nav-item has-badge ${activeTab === 'notifications' ? 'active' : ''}`}>
           <div className="nav-item-left"><Bell size={18} /> Notifications</div>
           {currentUser?.unreadNotifications > 0 && (
             <span className="nav-badge">{currentUser.unreadNotifications}</span>
           )}
-        </a>
+        </Link>
 
-        <a href="#" className="nav-item">
-          <Bookmark size={18} /> Saved Posts
-        </a>
+
       </nav>
 
       <div className="sidebar-bottom">

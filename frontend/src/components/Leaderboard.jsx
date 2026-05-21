@@ -9,14 +9,17 @@ const Leaderboard = () => {
   const [activeTab, setActiveTab] = useState('This Week');
   const [leaderboard, setLeaderboard] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         const data = await api.getLeaderboard();
         setLeaderboard(data);
       } catch (error) {
+        setError('Failed to load leaderboard. Please try again.');
         console.error('Failed to load leaderboard:', error);
       } finally {
         setIsLoading(false);
@@ -57,6 +60,11 @@ const Leaderboard = () => {
           <div className="ldb-list">
             {isLoading ? (
               <div style={{ textAlign: 'center', padding: '3rem', color: '#666' }}>Loading leaderboard...</div>
+            ) : error ? (
+              <div style={{ textAlign: 'center', padding: '3rem' }}>
+                <p style={{ color: '#ef4444' }}>{error}</p>
+                <button onClick={() => window.location.reload()} className="btn-retry" style={{ marginTop: '1rem' }}>Retry</button>
+              </div>
             ) : leaderboard.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '3rem', color: '#666' }}>No projects found</div>
             ) : (

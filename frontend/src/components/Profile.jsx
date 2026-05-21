@@ -13,7 +13,8 @@ const Profile = () => {
   const { currentUser, updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('projects'); // 'projects' or 'posts'
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('projects');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     fullName: '',
@@ -22,6 +23,8 @@ const Profile = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isMessaging, setIsMessaging] = useState(false);
 
   const isOwnProfile = !username || username === currentUser?.username;
 
@@ -29,7 +32,7 @@ const Profile = () => {
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
-        // Fallback to current user if no username is provided
+        setError(null);
         const targetUser = username || currentUser?.username || "me";
         const data = await api.getUserProfile(targetUser);
         setProfile(data);
@@ -39,6 +42,7 @@ const Profile = () => {
           badge: data.badge
         });
       } catch (err) {
+        setError('Failed to load profile. User may not exist.');
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -52,17 +56,13 @@ const Profile = () => {
       setIsSaving(true);
       setSaveMessage('');
       
-      console.log('Saving profile with data:', editForm);
-      
       const updated = await api.updateProfile(editForm);
-      console.log('Profile updated successfully:', updated);
       
       setProfile(prev => ({ ...prev, ...editForm }));
       updateUser(updated);
       setIsEditing(false);
       setSaveMessage('Profile updated successfully!');
       
-      // Clear success message after 3 seconds
       setTimeout(() => setSaveMessage(''), 3000);
     } catch (error) {
       console.error('Failed to update profile:', error);
@@ -72,12 +72,58 @@ const Profile = () => {
     }
   };
 
+  const handleConnect = async () => {
+    if (!profile?.id) return;
+    try {
+      setIsConnecting(true);
+      await api.connectWithUser(profile.id);
+      setProfile(prev => ({
+        ...prev,
+        connectionsCount: prev.connectionsCount + 1
+      }));
+      alert('Connection request sent!');
+    } catch (error) {
+      console.error('Failed to connect:', error);
+      alert(error.response?.data?.message || 'Failed to connect');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleMessage = async () => {
+    if (!profile?.id) return;
+    try {
+      setIsMessaging(true);
+      const result = await api.createOrGetChat(profile.id);
+      navigate('/messages');
+    } catch (error) {
+      console.error('Failed to create chat:', error);
+      alert('Failed to start conversation');
+    } finally {
+      setIsMessaging(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="dashboard-container">
         <Sidebar activeTab="profile" />
         <div className="dash-content-area flex items-center justify-center text-gray-500">
           Loading profile...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-container">
+        <Sidebar activeTab="profile" />
+        <div className="dash-content-area">
+          <div className="error-state">
+            <p>{error}</p>
+            <button onClick={() => navigate(-1)} className="btn-retry">Go Back</button>
+          </div>
         </div>
       </div>
     );
@@ -101,21 +147,25 @@ const Profile = () => {
                   <img src={profile.avatar} alt="Avatar" className="profile-avatar-large" />
                 </div>
                 
-                <div className="profile-actions-top">
-                  {isOwnProfile ? (
-                    <button 
-                      className="btn-secondary"
-                      onClick={() => setIsEditing(!isEditing)}
-                    >
-                      <Edit size={16} /> {isEditing ? 'Cancel' : 'Edit Profile'}
-                    </button>
-                  ) : (
-                    <>
-                      <button className="btn-secondary"><MessageSquare size={16} /> Message</button>
-                      <button className="btn-primary"><UserPlus size={16} /> Connect</button>
-                    </>
-                  )}
-                </div>
+                  <div className="profile-actions-top">
+                    {isOwnProfile ? (
+                      <button 
+                        className="btn-secondary"
+                        onClick={() => setIsEditing(!isEditing)}
+                      >
+                        <Edit size={16} /> {isEditing ? 'Cancel' : 'Edit Profile'}
+                      </button>
+                    ) : (
+                      <>
+                        <button className="btn-secondary" onClick={handleMessage} disabled={isMessaging}>
+                          <MessageSquare size={16} /> {isMessaging ? 'Opening...' : 'Message'}
+                        </button>
+                        <button className="btn-primary" onClick={handleConnect} disabled={isConnecting}>
+                          <UserPlus size={16} /> {isConnecting ? 'Connecting...' : 'Connect'}
+                        </button>
+                      </>
+                    )}
+                  </div>
 
                 <div className="profile-details">
                   {isEditing ? (

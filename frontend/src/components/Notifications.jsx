@@ -2,28 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './dashboard/Sidebar';
 import { api } from '../api';
-import { useAuth } from '../context/AuthContext';
 import { Bell, Award, UserPlus, MessageSquare, Heart, CheckCircle } from 'lucide-react';
 import './Notifications.css';
 
 const Notifications = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-
     const fetchNotifications = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         const data = await api.getNotifications();
         setNotifications(data);
       } catch (error) {
+        setError('Failed to load notifications. Please try again.');
         console.error('Failed to load notifications:', error);
       } finally {
         setIsLoading(false);
@@ -31,7 +27,7 @@ const Notifications = () => {
     };
 
     fetchNotifications();
-  }, [isAuthenticated, navigate]);
+  }, []);
 
   const handleMarkAsRead = async (notificationId) => {
     try {
@@ -114,6 +110,11 @@ const Notifications = () => {
 
             {isLoading ? (
               <div className="notifications-loading">Loading notifications...</div>
+            ) : error ? (
+              <div className="notifications-empty">
+                <p style={{ color: '#ef4444' }}>{error}</p>
+                <button onClick={() => window.location.reload()} className="btn-retry" style={{ marginTop: '1rem' }}>Retry</button>
+              </div>
             ) : notifications.length === 0 ? (
               <div className="notifications-empty">
                 <Bell size={48} className="empty-icon" />
