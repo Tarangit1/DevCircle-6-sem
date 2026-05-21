@@ -31,6 +31,7 @@ const Profile = () => {
   const [avatarPreview, setAvatarPreview] = useState('');
 
   const isOwnProfile = !username || username === currentUser?.username;
+  const isConnected = !isOwnProfile && currentUser?.connections?.includes(profile?.id);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -95,19 +96,26 @@ const Profile = () => {
     setAvatarPreview(url);
   };
 
-  const handleConnect = async () => {
+  const handleToggleFollow = async () => {
     if (!profile?.id) return;
     try {
       setIsConnecting(true);
-      await api.connectWithUser(profile.id);
-      setProfile(prev => ({
-        ...prev,
-        connectionsCount: prev.connectionsCount + 1
-      }));
-      alert('Connection request sent!');
+const result = await api.connectWithUser(profile.id);
+        if (result && result.connected) {
+          // Followed
+          updateUser({ connections: [...(currentUser?.connections || []), profile.id] });
+        } else {
+          // Unfollowed
+          updateUser({ connections: (currentUser?.connections || []).filter(id => id !== profile.id) });
+        }
+        setProfile(prev => ({
+          ...prev,
+          connectionsCount: result && result.connected ? prev.connectionsCount + 1 : Math.max(prev.connectionsCount - 1, 0)
+        }));
+        console.log(result && result.connected ? 'Followed successfully!' : 'Unfollowed successfully!');
     } catch (error) {
       console.error('Failed to connect:', error);
-      alert(error.response?.data?.message || 'Failed to connect');
+      console.warn(error.response?.data?.message || 'Failed to connect');
     } finally {
       setIsConnecting(false);
     }
@@ -121,7 +129,7 @@ const Profile = () => {
       navigate('/messages');
     } catch (error) {
       console.error('Failed to create chat:', error);
-      alert('Failed to start conversation');
+      console.warn('Failed to start conversation');
     } finally {
       setIsMessaging(false);
     }
@@ -189,9 +197,16 @@ const Profile = () => {
                         <button className="btn-secondary" onClick={handleMessage} disabled={isMessaging}>
                           <MessageSquare size={16} /> {isMessaging ? 'Opening...' : 'Message'}
                         </button>
-                        <button className="btn-primary" onClick={handleConnect} disabled={isConnecting}>
-                          <UserPlus size={16} /> {isConnecting ? 'Connecting...' : 'Connect'}
-                        </button>
+{!isConnected && (
+  <button className="btn-primary" onClick={handleToggleFollow} disabled={isConnecting}>
+    <UserPlus size={16} /> {isConnecting ? 'Following...' : 'Follow'}
+  </button>
+)}
+{isConnected && (
+        <button className="btn-primary" onClick={handleToggleFollow} disabled={isConnecting}>
+          Unfollow
+        </button>
+      )}
                       </>
                     )}
                   </div>

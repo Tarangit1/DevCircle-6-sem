@@ -85,7 +85,7 @@ const Messages = () => {
       setActiveChatId(result.chatId);
     } catch (error) {
       console.error('Failed to create chat:', error);
-      alert('Failed to start conversation');
+      console.warn('Failed to start conversation');
     }
   };
 

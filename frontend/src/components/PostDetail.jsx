@@ -148,13 +148,13 @@ const PostDetail = () => {
       }));
     } catch (error) {
       console.error('Failed to mark winner:', error);
-      alert(error.response?.data?.message || 'Failed to mark winner');
+      console.warn(error.response?.data?.message || 'Failed to mark winner');
     }
   };
 
   const handleSaveEdit = async () => {
     if (!editForm.title.trim() || !editForm.desc.trim()) {
-      alert('Title and description are required');
+      console.warn('Title and description are required');
       return;
     }
 
@@ -165,7 +165,7 @@ const PostDetail = () => {
       setIsEditing(false);
     } catch (error) {
       console.error('Failed to update post:', error);
-      alert(error.response?.data?.message || 'Failed to update post');
+      console.warn(error.response?.data?.message || 'Failed to update post');
     } finally {
       setIsSaving(false);
     }

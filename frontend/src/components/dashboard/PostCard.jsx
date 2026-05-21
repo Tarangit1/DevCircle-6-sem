@@ -15,6 +15,7 @@ const PostCard = ({ post }) => {
   
   const [isConnecting, setIsConnecting] = useState(false);
   const isConnected = currentUser?.connections?.includes(post.author.id);
+  const [showConnected, setShowConnected] = useState(false);
 
   const isOwnPost = currentUser?.username === post.author.handle.replace('@', '');
 
@@ -30,11 +31,13 @@ const PostCard = ({ post }) => {
     if (isConnecting) return;
 
     try {
-      setIsConnecting(true);
+setIsConnecting(true);
       const result = await api.connectWithUser(post.author.id);
-      if (result.connected) {
-  updateUser({ connections: [...(currentUser?.connections || []), post.author.id] });
-}
+      if (result && result.connected) {
+        updateUser({ connections: [...(currentUser?.connections || []), post.author.id] });
+        setShowConnected(true);
+        setTimeout(() => setShowConnected(false), 1500);
+      }
     } catch (error) {
       console.error('Failed to connect:', error);
       if (error.response?.status === 401) {
@@ -129,14 +132,23 @@ const PostCard = ({ post }) => {
   </div>
 </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {!isOwnPost && !isConnected && (
-            <button 
-              className="connect-btn"
-              onClick={handleConnect}
-              disabled={isConnecting}
-            >
-              <UserPlus size={16} /> Connect
-            </button>
+          {!isOwnPost && (
+            <>
+              {!isConnected && !showConnected && (
+                <button 
+                  className="connect-btn"
+                  onClick={handleConnect}
+                  disabled={isConnecting}
+                >
+                  <UserPlus size={16} /> Follow
+                </button>
+              )}
+              {showConnected && (
+                <span className="connected-label">
+                  <UserCheck size={16} /> Followed
+                </span>
+              )}
+            </>
           )}
           <span className={`post-badge ${getBadgeClass(post.badge)}`}>{post.badge}</span>
         </div>
