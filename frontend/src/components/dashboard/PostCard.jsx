@@ -129,23 +129,13 @@ const PostCard = ({ post }) => {
   </div>
 </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {!isOwnPost && (
+          {!isOwnPost && !isConnected && (
             <button 
-              className={`connect-btn ${isConnected ? 'connected' : ''}`}
+              className="connect-btn"
               onClick={handleConnect}
               disabled={isConnecting}
             >
-              {isConnected ? (
-                <>
-                  <UserCheck size={16} />
-                  Connected
-                </>
-              ) : (
-                <>
-                  <UserPlus size={16} />
-                  Connect
-                </>
-              )}
+              <UserPlus size={16} /> Connect
             </button>
           )}
           <span className={`post-badge ${getBadgeClass(post.badge)}`}>{post.badge}</span>
