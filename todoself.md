@@ -11,5 +11,4 @@
 - @remove filter button from homepage
 - @make following filter work on homepage 
 - @fix pagenumbers
-- @2 message icons in a post(done)
 - @fix bounty winner logic- only one bounty winner(done)
