@@ -5,5 +5,5 @@
 - fix notification dot even after marking as read the dot is still visible
 - fix leaderboard filters
 - fix bookmarks and add a bookmark tab in profile page
-- fix connect button
+- fix connect button (done)
 - niggggggaaaa
