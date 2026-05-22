@@ -10,13 +10,15 @@ import {
   toggleLike,
   toggleBookmark,
   addComment,
-  markCommentAsWinner
+  markCommentAsWinner,
+  getBookmarks
 } from '../controllers/postController.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
 router.get('/posts', optionalAuth, getFeedPosts);
+router.get('/posts/bookmarks', protect, getBookmarks);
 router.get('/projects', optionalAuth, getProjects);
 router.get('/bounties', optionalAuth, getBounties);
 router.get('/posts/:id', optionalAuth, getPostDetail);

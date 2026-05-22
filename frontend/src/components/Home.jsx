@@ -142,9 +142,6 @@ const Home = () => {
                   </button>
                 ))}
               </div>
-              <button className="filter-icon-btn">
-                Filter <Filter size={16} />
-              </button>
             </div>
           </div>
 

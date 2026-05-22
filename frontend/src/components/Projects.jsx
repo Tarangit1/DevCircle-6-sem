@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Projects.css';
-import { ChevronDown, Heart, MessageSquare, Bookmark, CheckCircle2, ArrowRight, Plus, Filter as FilterIcon, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { ChevronDown, Heart, MessageSquare, Bookmark, CheckCircle2, ArrowRight, Plus, Filter as FilterIcon, ChevronLeft, ChevronRight as ChevronRightIcon, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import DashboardHeader from './dashboard/DashboardHeader';
 import Sidebar from './dashboard/Sidebar';
 import { api } from '../api';
 
@@ -12,6 +11,38 @@ const Projects = () => {
   const [topWeek, setTopWeek] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
+  const [activeTab, setActiveTab] = useState('All Projects');
+
+  let filteredProjects = projects.filter(p => 
+    p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  if (activeTab === 'Trending') {
+    filteredProjects.sort((a, b) => (b.stats.likes + b.stats.comments) - (a.stats.likes + a.stats.comments));
+  } else if (activeTab === 'Most Liked') {
+    filteredProjects.sort((a, b) => b.stats.likes - a.stats.likes);
+  } else if (activeTab === 'Newest') {
+    filteredProjects.sort((a, b) => {
+      if (a.id > b.id) return -1;
+      if (a.id < b.id) return 1;
+      return 0;
+    });
+  }
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab]);
+
+  const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+  const paginatedProjects = filteredProjects.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -38,6 +69,22 @@ const Projects = () => {
     fetchProjects();
   }, []);
 
+  const handleBookmark = async (e, projectId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const result = await api.bookmarkPost(projectId);
+      setProjects(prev => prev.map(p => 
+        p.id === projectId ? { ...p, isBookmarked: result.bookmarked } : p
+      ));
+    } catch (error) {
+      console.error('Failed to bookmark', error);
+      if (error.response?.status === 401) {
+        navigate('/login');
+      }
+    }
+  };
+
   return (
     <div className="dashboard-container">
       <Sidebar activeTab="projects" />
@@ -50,27 +97,32 @@ const Projects = () => {
             <h1 className="projects-page-title">Projects</h1>
             <p className="projects-page-subtitle">Discover innovative projects built by developers around the world.</p>
             
-            <div className="projects-tabs">
-              <button className="p-tab active">All Projects</button>
-              <button className="p-tab">Trending</button>
-              <button className="p-tab">Most Liked</button>
-              <button className="p-tab">Newest</button>
+            <div className="projects-tabs" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                {['All Projects', 'Trending', 'Most Liked', 'Newest'].map(tab => (
+                  <button 
+                    key={tab}
+                    className={`p-tab ${activeTab === tab ? 'active' : ''}`}
+                    onClick={() => setActiveTab(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              <div className="dash-search-glass b-search" style={{ margin: 0, width: '250px' }}>
+                <Search size={16} className="text-gray-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search projects..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
           <div className="projects-grid-container">
-            {/* Grid Filters */}
-            <div className="grid-filters">
-              <div className="filter-group">
-                <button className="grid-filter-btn">All Tech Stacks <ChevronDown size={14} /></button>
-                <button className="grid-filter-btn">All Categories <ChevronDown size={14} /></button>
-                <button className="grid-filter-btn">All Time <ChevronDown size={14} /></button>
-              </div>
-              <div className="sort-group">
-                <span className="sort-label">Sort by</span>
-                <button className="grid-filter-btn sort-btn">Most Liked <ChevronDown size={14} /></button>
-              </div>
-            </div>
+
 
             {/* Grid */}
             <div className="projects-grid">
@@ -81,20 +133,26 @@ const Projects = () => {
                   <p style={{ color: '#ef4444' }}>{error}</p>
                   <button onClick={() => window.location.reload()} className="btn-retry" style={{ marginTop: '1rem' }}>Retry</button>
                 </div>
-              ) : projects.length === 0 ? (
+              ) : filteredProjects.length === 0 ? (
                 <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#666' }}>
                   No projects found. <button onClick={() => navigate('/projects/new')} style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Create one!</button>
                 </div>
               ) : (
-                projects.map(project => (
+                paginatedProjects.map(project => (
                   <Link to={`/post/${project.id}`} key={project.id} className="project-card" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                     <div className={`project-image-placeholder ${project.imageBg}`}>
                       {project.thumbnail && <img src={project.thumbnail} alt={project.title} className="project-image" />}
-<div className="bookmark-btn-floating"><Bookmark size={16} /></div>
+                      <div 
+                        className="bookmark-btn-floating" 
+                        onClick={(e) => handleBookmark(e, project.id)}
+                        style={{ color: project.isBookmarked ? '#3b82f6' : 'inherit' }}
+                      >
+                        <Bookmark size={16} fill={project.isBookmarked ? 'currentColor' : 'none'} />
+                      </div>
                     </div>
                     <div className="project-card-content">
                       <h3 className="p-title">
-                        {project.title} {project.verified && <CheckCircle2 size={14} className="verified-icon" />}
+                        {project.title}
                       </h3>
                       <p className="p-desc">{project.desc}</p>
                       <div className="p-tags">
@@ -113,7 +171,9 @@ const Projects = () => {
   </span>
 </div>
                         <div className="p-stats">
-                          <span><Heart size={14} /> {project.stats.likes}</span>
+                          <span style={{ color: project.isLiked ? '#ef4444' : 'inherit' }}>
+                            <Heart size={14} fill={project.isLiked ? 'currentColor' : 'none'} /> {project.stats.likes}
+                          </span>
                           <span><MessageSquare size={14} /> {project.stats.comments}</span>
                         </div>
                       </div>
@@ -124,55 +184,41 @@ const Projects = () => {
             </div>
 
             {/* Pagination */}
-            <div className="pagination">
-              <button className="page-nav-btn"><ChevronLeft size={16} /></button>
-              <button className="page-btn active">1</button>
-              <button className="page-btn">2</button>
-              <button className="page-btn">3</button>
-              <button className="page-btn">4</button>
-              <button className="page-btn">5</button>
-              <span className="page-dots">...</span>
-              <button className="page-btn">12</button>
-              <button className="page-nav-btn"><ChevronRightIcon size={16} /></button>
-            </div>
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button 
+                  className="page-nav-btn" 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  style={{ opacity: currentPage === 1 ? 0.5 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                
+                {Array.from({ length: totalPages }).map((_, idx) => (
+                  <button 
+                    key={idx} 
+                    className={`page-btn ${currentPage === idx + 1 ? 'active' : ''}`}
+                    onClick={() => setCurrentPage(idx + 1)}
+                  >
+                    {idx + 1}
+                  </button>
+                ))}
+
+                <button 
+                  className="page-nav-btn" 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  style={{ opacity: currentPage === totalPages ? 0.5 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+                >
+                  <ChevronRightIcon size={16} />
+                </button>
+              </div>
+            )}
           </div>
         </main>
 
         <aside className="dash-widgets projects-sidebar">
-          <DashboardHeader />
-          {/* Filter Widget */}
-          <div className="widget-card filter-widget">
-            <div className="widget-header">
-              <h3 className="flex items-center gap-2"><FilterIcon size={16} className="text-blue-500" /> Filter Projects</h3>
-            </div>
-            
-            <div className="filter-section">
-              <h4>Categories</h4>
-              <label className="checkbox-label-sm"><input type="checkbox" defaultChecked /><span className="checkbox-custom-sm"></span>All</label>
-              <label className="checkbox-label-sm"><input type="checkbox" /><span className="checkbox-custom-sm"></span>Web Development</label>
-              <label className="checkbox-label-sm"><input type="checkbox" /><span className="checkbox-custom-sm"></span>Developer Tools</label>
-              <label className="checkbox-label-sm"><input type="checkbox" /><span className="checkbox-custom-sm"></span>AI / ML</label>
-              <label className="checkbox-label-sm"><input type="checkbox" /><span className="checkbox-custom-sm"></span>Mobile</label>
-              <label className="checkbox-label-sm"><input type="checkbox" /><span className="checkbox-custom-sm"></span>Design Tools</label>
-              <label className="checkbox-label-sm"><input type="checkbox" /><span className="checkbox-custom-sm"></span>Other</label>
-            </div>
-
-            <div className="filter-section mt-4">
-              <h4>Tech Stack</h4>
-              <div className="select-wrapper">
-                <select className="tech-stack-select">
-                  <option>Select tech stack</option>
-                  <option>React</option>
-                  <option>Next.js</option>
-                  <option>Vue</option>
-                  <option>Node.js</option>
-                </select>
-                <ChevronDown size={14} className="select-icon" />
-              </div>
-            </div>
-
-            <button className="apply-filters-btn">Apply Filters</button>
-          </div>
 
           {/* Top Projects */}
           <div className="widget-card">

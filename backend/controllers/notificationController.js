@@ -64,7 +64,7 @@ export const markAsRead = async (req, res) => {
       unreadNotifications: unreadCount
     });
 
-    res.json({ message: 'Notification marked as read' });
+    res.json({ message: 'Notification marked as read', unreadCount });
   } catch (error) {
     console.error('Mark notification as read error:', error);
     res.status(500).json({ message: 'Server error' });

@@ -40,6 +40,11 @@ export const api = {
     return response.data;
   },
   
+  getBookmarks: async () => {
+    const response = await axiosInstance.get('/posts/bookmarks');
+    return response.data;
+  },
+
   // Projects
   getProjects: async () => {
     const response = await axiosInstance.get('/projects');
@@ -53,8 +58,8 @@ export const api = {
   },
 
   // Leaderboard
-  getLeaderboard: async () => {
-    const response = await axiosInstance.get('/leaderboard');
+  getLeaderboard: async (timeframe = 'This Week') => {
+    const response = await axiosInstance.get('/leaderboard', { params: { timeframe } });
     return response.data;
   },
 
@@ -186,6 +191,18 @@ export const api = {
 
   markAllNotificationsAsRead: async () => {
     const response = await axiosInstance.patch('/notifications/read-all');
+    return response.data;
+  },
+
+  // File Upload
+  uploadImage: async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await axiosInstance.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   }
 };

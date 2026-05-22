@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, ChevronDown, MessageSquare, Monitor, Filter as FilterIcon } from 'lucide-react';
+import { Search, Plus, ChevronDown, MessageSquare, Monitor, Filter as FilterIcon, Heart } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Sidebar from './dashboard/Sidebar';
+import PostCard from './dashboard/PostCard';
 import './Bounties.css';
 import { api } from '../api';
 
@@ -88,56 +89,8 @@ const Bounties = () => {
                   </div>
                 ) : (
                   filteredBounties.map(bounty => (
-                    <Link to={`/post/${bounty.id}`} key={bounty.id} className="bounty-card" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-
-                    <div className="bounty-left-col">
-                      <div className={`bounty-icon-lg ${bounty.iconBg || ''} ${bounty.iconColor || ''}`}>
-                        {bounty.icon || '🐛'}
-                      </div>
-                    </div>
-
-                    <div className="bounty-mid-col">
-                      <div className="b-title-row">
-                        <h3>{bounty.title}</h3>
-                        <span className="b-category-badge">
-                          <Monitor size={12} /> {bounty.category || 'General'}
-                        </span>
-                      </div>
-
-                      <p className="b-desc">{bounty.desc}</p>
-
-                      <div className="b-tags">
-                        {bounty.tags && bounty.tags.map(tag => (
-                          <span key={tag} className="b-tag">{tag}</span>
-                        ))}
-                      </div>
-
-                      <div className="b-author">
-                        <img src={bounty.author.avatar} alt={bounty.author.handle} />
-                        <span>{bounty.author.handle}</span>
-                        <span className="dot-sep">•</span>
-                        <span>{bounty.timeAgo}</span>
-                      </div>
-                    </div>
-
-                    <div className="bounty-right-col">
-                      <span className={`b-status-badge ${bounty.status ? bounty.status.toLowerCase() : 'active'}`}>
-                        {bounty.status || 'Active'}
-                      </span>
-
-                      <div className="b-reward-box">
-                        <span className="b-amount">{bounty.amount || bounty.bountyAmount || 'TBD'}</span>
-                        <span className="b-reward-label">Reward</span>
-                      </div>
-
-                      <div className="b-stats-icons">
-                        <span><MessageSquare size={14} /> {bounty.comments || 0}</span>
-                        <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> {bounty.submissions || 0}</span>
-                      </div>
-                    </div>
-
-                  </Link>
-                ))
+                    <PostCard key={bounty.id} post={bounty} />
+                  ))
                 )}
               </div>
 

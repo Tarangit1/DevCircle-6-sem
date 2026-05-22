@@ -1,12 +1,14 @@
-- remove filter and search form projects
-- fix leaderboard ranking
-- photos upload from device instead of url everywereh , also fix uploading image while creating account
-- left sidebar shouldnt be scrollable it should be fixed all content should be fixed
-- fix notification dot even after marking as read the dot is still visible
-- fix leaderboard filters
-- fix bookmarks and add a bookmark tab in profile page
-- fix connect button
-- make share button work
-- remove filter button from homepage
-- make following filter work on homepage 
-- fix pagenumbers 
+- @remove filter in projects(done)
+- @fix leaderboard ranking(done)
+- @photos upload from device instead of url everywereh
+- @fix uploading image while creating account
+- @left sidebar shouldnt be scrollable it should be fixed all content should be fixed(done)
+- @fix notification dot even after marking as read the dot is still visible(done)
+- @fix leaderboard filters(done)
+- @fix bookmarks and add a bookmark tab in profile page
+- @fix connect button
+- @make share button work
+- @remove filter button from homepage
+- @make following filter work on homepage 
+- @fix pagenumbers
+- @fix bounty winner logic- only one bounty winner(done)

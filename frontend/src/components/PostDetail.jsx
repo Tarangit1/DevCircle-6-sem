@@ -17,6 +17,7 @@ const PostDetail = () => {
   const [commentInput, setCommentInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [replyInput, setReplyInput] = useState('');
 
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
@@ -27,6 +28,8 @@ const PostDetail = () => {
   const [newTag, setNewTag] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
 
   const isOwner = currentUser?.username === post?.author?.handle?.replace('@', '');
 
@@ -38,6 +41,8 @@ const PostDetail = () => {
         const data = await api.getPostDetail(id);
         setPost(data);
         setLikesCount(data.stats.likes);
+        setLiked(data.isLiked || false);
+        setBookmarked(data.isBookmarked || false);
         setEditForm({
           title: data.title,
           desc: data.desc,
@@ -58,45 +63,45 @@ const PostDetail = () => {
 
   const handleAddComment = async (e) => {
     e.preventDefault();
-    
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-
+    if (!isAuthenticated) { navigate('/login'); return; }
     if (!commentInput.trim()) return;
 
     try {
       setIsSubmitting(true);
-      const newComment = await api.addComment(id, {
-        content: commentInput,
-        parentCommentId: replyingTo
-      });
-      
-      if (replyingTo) {
-        setPost(prev => ({
-          ...prev,
-          comments: prev.comments.map(c => 
-            c.id === replyingTo 
-              ? { ...c, replies: [...(c.replies || []), newComment] }
-              : c
-          )
-        }));
-      } else {
-        setPost(prev => ({
-          ...prev,
-          comments: [newComment, ...prev.comments],
-          stats: { ...prev.stats, comments: prev.stats.comments + 1 }
-        }));
-      }
-      
+      const newComment = await api.addComment(id, { content: commentInput, parentCommentId: null });
+      setPost(prev => ({
+        ...prev,
+        comments: [newComment, ...prev.comments],
+        stats: { ...prev.stats, comments: prev.stats.comments + 1 }
+      }));
       setCommentInput('');
+    } catch (error) {
+      if (error.response?.status === 401) navigate('/login');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAddReply = async (e, parentId) => {
+    e.preventDefault();
+    if (!isAuthenticated) { navigate('/login'); return; }
+    if (!replyInput.trim()) return;
+
+    try {
+      setIsSubmitting(true);
+      const newComment = await api.addComment(id, { content: replyInput, parentCommentId: parentId });
+      setPost(prev => ({
+        ...prev,
+        comments: prev.comments.map(c => 
+          c.id === parentId 
+            ? { ...c, replies: [...(c.replies || []), newComment] }
+            : c
+        )
+      }));
+      setReplyInput('');
       setReplyingTo(null);
     } catch (error) {
-      console.error('Failed to add comment:', error);
-      if (error.response?.status === 401) {
-        navigate('/login');
-      }
+      if (error.response?.status === 401) navigate('/login');
     } finally {
       setIsSubmitting(false);
     }
@@ -142,9 +147,20 @@ const PostDetail = () => {
       
       setPost(prev => ({
         ...prev,
-        comments: prev.comments.map(c => 
-          c.id === commentId ? { ...c, isWinner: true } : c
-        )
+        comments: prev.comments.map(c => {
+          if (c.id === commentId) {
+            return { ...c, isWinner: true };
+          }
+          if (c.replies) {
+            return {
+              ...c,
+              replies: c.replies.map(r => 
+                r.id === commentId ? { ...r, isWinner: true } : r
+              )
+            };
+          }
+          return c;
+        })
       }));
     } catch (error) {
       console.error('Failed to mark winner:', error);
@@ -183,6 +199,14 @@ const PostDetail = () => {
       alert(error.response?.data?.message || 'Failed to delete post');
       setIsDeleting(false);
     }
+  };
+
+  const handleShare = () => {
+    const url = `${window.location.origin}/post/${post.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }).catch(err => console.error('Failed to copy link:', err));
   };
 
   const handleAddTag = () => {
@@ -308,14 +332,31 @@ const PostDetail = () => {
                     )}
 
                     <div className="edit-field">
-                      <label>Thumbnail URL</label>
+                      <label>Thumbnail</label>
                       <input 
-                        type="url" 
-                        value={editForm.thumbnail}
-                        onChange={(e) => setEditForm({ ...editForm, thumbnail: e.target.value })}
+                        type="file" 
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            try {
+                              setIsUploadingThumbnail(true);
+                              const result = await api.uploadImage(file);
+                              setEditForm({ ...editForm, thumbnail: result.url });
+                            } catch (err) {
+                              console.error('Failed to upload thumbnail', err);
+                            } finally {
+                              setIsUploadingThumbnail(false);
+                            }
+                          }
+                        }}
                         className="edit-input"
-                        placeholder="https://example.com/image.png"
+                        style={{ padding: '8px 12px' }}
                       />
+                      {isUploadingThumbnail && <span style={{fontSize: '12px', color: '#888', marginLeft: '10px'}}>Uploading...</span>}
+                      {editForm.thumbnail && !isUploadingThumbnail && (
+                        <img src={editForm.thumbnail} alt="Thumbnail preview" style={{width: '100px', marginTop: '10px', borderRadius: '4px'}} onError={(e) => e.target.style.display = 'none'} />
+                      )}
                     </div>
 
                     <div className="edit-field">
@@ -370,10 +411,9 @@ const PostDetail = () => {
                     onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.author.handle.replace('@', '')}`); }}
                     style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
                   >
-                    <h4>
-                      {post.author.name}
-                      {post.author.verified && <CheckCircle2 size={14} className="verified-icon text-blue-500 ml-1" />}
-                    </h4>
+                    <div className="flex items-center">
+                      <span className="font-semibold text-gray-900">{post.author.name}</span>
+                    </div>
                   </span>
                   <span className="text-xs text-gray-400">{post.author.handle} • {post.timeAgo}</span>
                 </div>
@@ -412,7 +452,9 @@ const PostDetail = () => {
                   <Heart size={18} fill={liked ? 'currentColor' : 'none'} /> {likesCount}
                 </button>
                 <button className="pd-action-btn"><MessageSquare size={18} /> {post.stats.comments}</button>
-                <button className="pd-action-btn"><Share2 size={18} /> Share</button>
+                <button className="pd-action-btn" onClick={handleShare}>
+                  <Share2 size={18} /> {isCopied ? 'Copied!' : 'Share'}
+                </button>
                 <button 
                   className={`pd-action-btn ml-auto ${bookmarked ? 'bookmarked' : ''}`}
                   onClick={handleBookmark}
@@ -475,8 +517,9 @@ const PostDetail = () => {
                           <span className="pd-c-handle">{comment.author.handle}</span>
                           <span className="pd-c-time">• {comment.timeAgo}</span>
                           
-                          {!comment.isWinner && post.badge === 'Bounty' && currentUser && 
-                           currentUser.username === post.author.handle.replace('@', '') && (
+                          {!comment.isWinner && post.badge === 'Bounty' && post.status !== 'Solved' && currentUser && 
+                           currentUser.username === post.author.handle.replace('@', '') && 
+                           currentUser.username !== comment.author.handle.replace('@', '') && (
                             <button 
                               className="pd-nominate-btn ml-auto"
                               onClick={() => handleMarkWinner(comment.id)}
@@ -487,16 +530,45 @@ const PostDetail = () => {
                         </div>
                         <p className="pd-c-text">{comment.content}</p>
                         <div className="pd-c-actions">
-                          <button>Reply</button>
-                          <button>Like</button>
+                          <button onClick={() => {
+                            setReplyingTo(replyingTo === comment.id ? null : comment.id);
+                            setReplyInput('');
+                          }}>
+                            {replyingTo === comment.id ? 'Cancel Reply' : 'Reply'}
+                          </button>
                         </div>
                       </div>
                     </div>
 
+                    {replyingTo === comment.id && (
+                      <div className="pd-comment-input-box" style={{ marginTop: '0.5rem', marginBottom: '1rem', marginLeft: '3.5rem' }}>
+                        <input 
+                          autoFocus
+                          type="text" 
+                          placeholder={`Reply to ${comment.author.name}...`} 
+                          value={replyInput}
+                          onChange={(e) => setReplyInput(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleAddReply(e, comment.id)}
+                        />
+                        <button 
+                          className="btn-post" 
+                          onClick={(e) => handleAddReply(e, comment.id)}
+                          disabled={isSubmitting || !replyInput.trim()}
+                        >
+                          {isSubmitting ? 'Posting...' : 'Reply'}
+                        </button>
+                      </div>
+                    )}
+
                     {comment.replies && comment.replies.length > 0 && (
                       <div className="pd-replies">
                         {comment.replies.map(reply => (
-                          <div key={reply.id} className="pd-comment">
+                          <div key={reply.id} className={`pd-comment ${reply.isWinner ? 'winner' : ''}`} style={reply.isWinner ? { backgroundColor: 'rgba(234, 179, 8, 0.1)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(234, 179, 8, 0.3)', position: 'relative' } : {}}>
+                            {reply.isWinner && (
+                              <div className="pd-winner-badge" style={{ position: 'absolute', top: '-10px', right: '10px', fontSize: '10px' }}>
+                                <Award size={12} /> BOUNTY WINNER
+                              </div>
+                            )}
                              <span
                                onClick={(e) => { e.stopPropagation(); navigate(`/profile/${reply.author.handle.replace('@', '')}`); }}
                                style={{ cursor: 'pointer' }}
@@ -513,6 +585,17 @@ const PostDetail = () => {
                                  </span>
                                 <span className="pd-c-handle">{reply.author.handle}</span>
                                 <span className="pd-c-time">• {reply.timeAgo}</span>
+                                
+                                {!reply.isWinner && post.badge === 'Bounty' && post.status !== 'Solved' && currentUser && 
+                                 currentUser.username === post.author.handle.replace('@', '') && 
+                                 currentUser.username !== reply.author.handle.replace('@', '') && (
+                                  <button 
+                                    className="pd-nominate-btn ml-auto"
+                                    onClick={() => handleMarkWinner(reply.id)}
+                                  >
+                                    Mark as Winner
+                                  </button>
+                                )}
                               </div>
                               <p className="pd-c-text">{reply.content}</p>
                             </div>

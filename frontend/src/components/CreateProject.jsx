@@ -22,6 +22,7 @@ const CreateProject = () => {
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [bountyAmount, setBountyAmount] = useState('');
   const [badge, setBadge] = useState(isBountyMode ? 'Bounty' : 'Building');
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
 
   const categories = [
     { label: 'Web Development', value: 'Web' },
@@ -211,17 +212,31 @@ const CreateProject = () => {
               </div>
 
               <div className="form-group">
-                <label>Project Thumbnail URL</label>
-                <p className="form-helper">Paste an image URL for your project cover (optional)</p>
+                <label>Project Thumbnail</label>
+                <p className="form-helper">Upload an image for your project cover (optional)</p>
                 <div className="input-wrapper">
                   <input 
-                    type="url" 
-                    placeholder="https://example.com/image.png" 
-                    value={thumbnailUrl}
-                    onChange={(e) => setThumbnailUrl(e.target.value)}
+                    type="file" 
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        try {
+                          setIsUploadingThumbnail(true);
+                          const result = await api.uploadImage(file);
+                          setThumbnailUrl(result.url);
+                        } catch (err) {
+                          console.error('Failed to upload thumbnail', err);
+                        } finally {
+                          setIsUploadingThumbnail(false);
+                        }
+                      }
+                    }}
+                    style={{ padding: '8px 12px' }}
                   />
+                  {isUploadingThumbnail && <span style={{fontSize: '12px', color: '#888', marginLeft: '10px'}}>Uploading...</span>}
                 </div>
-                {thumbnailUrl && (
+                {thumbnailUrl && !isUploadingThumbnail && (
                   <div className="thumbnail-preview">
                     <img src={thumbnailUrl} alt="Preview" onError={(e) => e.target.style.display = 'none'} />
                   </div>

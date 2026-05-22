@@ -1,18 +1,19 @@
 .ldb-content-area {
+  display: block;
   padding: 3rem 4rem;
   overflow-y: auto;
-  align-items: center; /* Center the table if window is very large */
 }
 
 .ldb-hero {
   width: 100%;
   max-width: 900px;
-  margin-bottom: 2rem;
+  margin: 0 auto 2rem auto;
 }
 
 .ldb-table-container {
   width: 100%;
   max-width: 900px;
+  margin: 0 auto;
   background: rgba(15, 15, 20, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 16px;

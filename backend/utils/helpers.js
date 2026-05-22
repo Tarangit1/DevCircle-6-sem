@@ -57,7 +57,7 @@ export const transformUser = (user) => {
 };
 
 // Transform post to frontend format
-export const transformPost = (post, includeAuthor = true) => {
+export const transformPost = (post, includeAuthor = true, reqUser = null) => {
   const transformed = {
     id: post._id,
     title: post.title,
@@ -68,7 +68,9 @@ export const transformPost = (post, includeAuthor = true) => {
     stats: {
       likes: post.likes?.length || 0,
       comments: post.commentCount || 0
-    }
+    },
+    isLiked: reqUser && post.likes ? post.likes.some(id => id.toString() === reqUser._id.toString()) : false,
+    isBookmarked: reqUser && post.bookmarks ? post.bookmarks.some(id => id.toString() === reqUser._id.toString()) : false
   };
 
   if (includeAuthor && post.authorId) {

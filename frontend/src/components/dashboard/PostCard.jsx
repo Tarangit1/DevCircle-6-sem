@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart, MessageSquare, Share2, Bookmark, CheckCircle2, Code2, UserPlus, UserCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api';
@@ -7,17 +7,24 @@ import { useAuth } from '../../context/AuthContext';
 const PostCard = ({ post }) => {
   const navigate = useNavigate();
   const { isAuthenticated, currentUser, updateUser } = useAuth();
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(post.isLiked || false);
   const [likesCount, setLikesCount] = useState(post.stats.likes);
-  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarked, setBookmarked] = useState(post.isBookmarked || false);
   const [isLiking, setIsLiking] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   
   const [isConnecting, setIsConnecting] = useState(false);
   const isConnected = currentUser?.connections?.includes(post.author.id);
   const [showConnected, setShowConnected] = useState(false);
 
   const isOwnPost = currentUser?.username === post.author.handle.replace('@', '');
+
+  useEffect(() => {
+    setBookmarked(post.isBookmarked || false);
+    setLiked(post.isLiked || false);
+    setLikesCount(post.stats.likes);
+  }, [post.isBookmarked, post.isLiked, post.stats.likes]);
 
   const handleConnect = async (e) => {
     e.preventDefault();
@@ -99,6 +106,16 @@ setIsConnecting(true);
     }
   };
 
+  const handleShare = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/post/${post.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }).catch(err => console.error('Failed to copy link:', err));
+  };
+
   const getBadgeClass = (badge) => {
     switch(badge.toLowerCase()) {
       case 'building': return 'badge-building';
@@ -125,7 +142,7 @@ setIsConnecting(true);
       style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
     >
       <span className="author-name">
-        {post.author.name} {post.author.verified && <CheckCircle2 size={12} className="verified-icon" />}
+        {post.author.name}
       </span>
     </span>
     <span className="author-handle">{post.author.handle} • {post.timeAgo}</span>
@@ -214,7 +231,9 @@ setIsConnecting(true);
           <Heart size={18} fill={liked ? 'currentColor' : 'none'} /> {likesCount}
         </button>
         <button className="action-btn"><MessageSquare size={18} /> {post.stats.comments}</button>
-        <button className="action-btn"><Share2 size={18} /> Share</button>
+        <button className="action-btn" onClick={handleShare}>
+          <Share2 size={18} /> {isCopied ? 'Copied!' : 'Share'}
+        </button>
         <button 
           className={`action-btn ml-auto ${bookmarked ? 'bookmarked' : ''}`}
           onClick={handleBookmark}

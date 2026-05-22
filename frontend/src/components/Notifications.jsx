@@ -34,10 +34,10 @@ const Notifications = () => {
 
 const handleMarkAsRead = async (notificationId) => {
     try {
-      await api.markNotificationAsRead(notificationId);
-setNotifications(prev => {
+      const res = await api.markNotificationAsRead(notificationId);
+          setNotifications(prev => {
             const updated = prev.map(n => n.id === notificationId ? { ...n, read: true } : n);
-            const newUnread = updated.filter(n => !n.read).length;
+            const newUnread = res.unreadCount !== undefined ? res.unreadCount : updated.filter(n => !n.read).length;
             updateUser({ unreadNotifications: newUnread });
             return updated;
           });
